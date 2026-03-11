@@ -23,12 +23,13 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.ItemLore;
 import org.jspecify.annotations.NonNull;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 public final class ChunkLoaderMenu extends ChestMenu {
 	private static final int MENU_SIZE = 27;
+	// Slot layout in 3x9 grid: row 2 col 3 (enable), row 2 col 5 (preview)
 	private static final int ENABLE_SLOT = 11;
 	private static final int PREVIEW_SLOT = 13;
 	private static final ItemStack FILLER_TEMPLATE;
@@ -53,7 +54,8 @@ public final class ChunkLoaderMenu extends ChestMenu {
 		this.level = level;
 		this.pos = pos.immutable();
 		this.playerId = playerId;
-		this.refresh();
+		this.fillBackground();
+		this.refreshActionSlots();
 	}
 
 	@Override
@@ -69,7 +71,7 @@ public final class ChunkLoaderMenu extends ChestMenu {
 	@Override
 	public void clicked(int slotId, int button, @NonNull ClickType clickType, @NonNull Player player) {
 		if (slotId >= 0 && slotId < MENU_SIZE) {
-			if (clickType == ClickType.PICKUP) {
+			if (clickType == ClickType.PICKUP && button == 0) {
 				this.handleMenuClick(slotId, player);
 			}
 			return;
@@ -96,28 +98,31 @@ public final class ChunkLoaderMenu extends ChestMenu {
 			}
 		}
 
-		this.refresh();
+		this.refreshActionSlots();
 		this.broadcastFullState();
 	}
 
-	private void refresh() {
-		ChunkLoaderBlockEntity blockEntity = this.getBlockEntity();
+	private void fillBackground() {
 		for (int i = 0; i < MENU_SIZE; i++) {
 			this.container.setItem(i, filler());
 		}
+	}
 
+	private void refreshActionSlots() {
+		ChunkLoaderBlockEntity blockEntity = this.getBlockEntity();
 		if (blockEntity == null) {
 			return;
 		}
 
+		boolean enabled = blockEntity.isEnabled();
 		boolean previewing = ChunkLoaderPreviewManager.isPreviewing(this.playerId, this.level, this.pos);
 
 		this.container.setItem(ENABLE_SLOT, actionItem(
-			blockEntity.isEnabled() ? Items.LEVER : Items.REDSTONE_TORCH,
-			Component.literal(blockEntity.isEnabled() ? "Disable loader" : "Enable loader")
-				.withStyle(blockEntity.isEnabled() ? ChatFormatting.RED : ChatFormatting.GREEN),
-			Component.literal(blockEntity.isEnabled() ? "Loader status: enabled" : "Loader status: disabled")
-				.withStyle(blockEntity.isEnabled() ? ChatFormatting.GREEN : ChatFormatting.GOLD)
+			enabled ? Items.LEVER : Items.REDSTONE_TORCH,
+			Component.literal(enabled ? "Disable loader" : "Enable loader")
+				.withStyle(enabled ? ChatFormatting.RED : ChatFormatting.GREEN),
+			Component.literal(enabled ? "Loader status: enabled" : "Loader status: disabled")
+				.withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GOLD)
 		));
 
 		this.container.setItem(PREVIEW_SLOT, actionItem(
@@ -141,7 +146,10 @@ public final class ChunkLoaderMenu extends ChestMenu {
 		stack.set(DataComponents.ITEM_NAME, plain(name));
 
 		if (loreLines.length > 0) {
-			List<Component> lines = Arrays.stream(loreLines).map(ChunkLoaderMenu::plain).toList();
+			List<Component> lines = new ArrayList<>(loreLines.length);
+			for (Component line : loreLines) {
+				lines.add(plain(line));
+			}
 			stack.set(DataComponents.LORE, new ItemLore(lines));
 		}
 

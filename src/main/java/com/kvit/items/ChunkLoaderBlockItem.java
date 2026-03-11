@@ -56,7 +56,7 @@ public final class ChunkLoaderBlockItem extends PolymerBlockItem {
             return itemStack;
         }
         ItemStack result = super.getPolymerItemStack(itemStack, tooltipType, context);
-        result.set(DataComponents.ITEM_NAME, Component.literal("Chunk Loader"));
+        result.set(DataComponents.ITEM_NAME, Component.literal(ModContent.CHUNK_LOADER_DISPLAY_NAME));
         return result;
     }
 

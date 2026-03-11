@@ -28,6 +28,8 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import xyz.nucleoid.packettweaker.PacketContext;
 
 public final class ModContent {
+	public static final String CHUNK_LOADER_DISPLAY_NAME = "Chunk Loader";
+
 	private static Block chunkLoader;
 	private static Item chunkLoaderItem;
 	private static BlockEntityType<ChunkLoaderBlockEntity> chunkLoaderBlockEntity;

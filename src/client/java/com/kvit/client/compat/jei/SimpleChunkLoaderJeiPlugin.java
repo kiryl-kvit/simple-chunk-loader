@@ -1,6 +1,7 @@
 package com.kvit.client.compat.jei;
 
 import com.kvit.ModContent;
+import com.kvit.SimpleChunkLoader;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.constants.VanillaTypes;
@@ -13,7 +14,7 @@ import java.util.List;
 
 @JeiPlugin
 public final class SimpleChunkLoaderJeiPlugin implements IModPlugin {
-	private static final Identifier UID = Identifier.fromNamespaceAndPath("simple-chunk-loader", "jei_plugin");
+	private static final Identifier UID = Identifier.fromNamespaceAndPath(SimpleChunkLoader.MOD_ID, "jei_plugin");
 
 	@Override
 	public @NonNull Identifier getPluginUid() {
