@@ -90,6 +90,6 @@ public final class ChunkLoaderBlock extends BaseEntityBlock implements PolymerBl
 
     @Override
     protected boolean shouldChangedStateKeepBlockEntity(BlockState newState) {
-        return newState.is(ModContent.CHUNK_LOADER);
+        return newState.is(ModContent.chunkLoader());
     }
 }

@@ -13,7 +13,7 @@ public final class ChunkLoaderBlockEntity extends BlockEntity {
     private boolean enabled = true;
 
     public ChunkLoaderBlockEntity(BlockPos pos, BlockState state) {
-        super(ModContent.CHUNK_LOADER_BLOCK_ENTITY, pos, state);
+        super(ModContent.chunkLoaderBlockEntity(), pos, state);
     }
 
     public boolean isEnabled() {

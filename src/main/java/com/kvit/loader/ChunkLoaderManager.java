@@ -10,16 +10,16 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 public final class ChunkLoaderManager {
-    private static boolean batchMode = false;
-
     private ChunkLoaderManager() {
     }
 
     public static boolean canPlaceAnother(MinecraftServer server) {
-        return server != null && getTotalLoaderCount(server) < SimpleChunkLoader.getConfig().maxLoaders();
+        Objects.requireNonNull(server, "server");
+        return getTotalLoaderCount(server) < SimpleChunkLoader.getConfig().maxLoaders();
     }
 
     public static int getTotalLoaderCount(MinecraftServer server) {
@@ -31,16 +31,12 @@ public final class ChunkLoaderManager {
     }
 
     public static void handleWorldLoad(ServerLevel level) {
-        batchMode = true;
-        try {
-            ChunkLoaderSavedData data = getData(level);
-            for (ChunkLoaderRecord record : Set.copyOf(data.getLoaders())) {
-                if (!level.getBlockState(record.blockPos()).is(ModContent.CHUNK_LOADER)) {
-                    data.remove(record.blockPos());
-                }
+        ChunkLoaderSavedData data = getData(level);
+        for (ChunkLoaderRecord record : Set.copyOf(data.getLoaders())) {
+            BlockPos pos = record.blockPos();
+            if (!level.isLoaded(pos) || !level.getBlockState(pos).is(ModContent.chunkLoader())) {
+                data.remove(pos);
             }
-        } finally {
-            batchMode = false;
         }
         applyWorld(level);
     }
@@ -48,17 +44,13 @@ public final class ChunkLoaderManager {
     public static void upsert(ServerLevel level, BlockPos pos, boolean enabled) {
         ChunkLoaderSavedData data = getData(level);
         data.put(pos, enabled);
-        if (!batchMode) {
-            applyWorld(level);
-        }
+        applyWorld(level);
     }
 
     public static void remove(ServerLevel level, BlockPos pos) {
         ChunkLoaderSavedData data = getData(level);
         data.remove(pos);
-        if (!batchMode) {
-            applyWorld(level);
-        }
+        applyWorld(level);
     }
 
     public static ChunkBounds getChunkBounds(BlockPos pos) {

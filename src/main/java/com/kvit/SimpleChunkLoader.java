@@ -13,6 +13,8 @@ import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Objects;
+
 public final class SimpleChunkLoader implements ModInitializer {
 	public static final String MOD_ID = "simple-chunk-loader";
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
@@ -37,7 +39,7 @@ public final class SimpleChunkLoader implements ModInitializer {
 	}
 
 	public static SimpleChunkLoaderConfig getConfig() {
-		return config;
+		return Objects.requireNonNull(config, "Config accessed before mod initialization");
 	}
 
 	public static Identifier id(String path) {

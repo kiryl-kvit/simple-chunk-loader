@@ -51,7 +51,7 @@ public final class ChunkLoaderMenu extends ChestMenu {
 
 	@Override
 	public boolean stillValid(@NonNull Player player) {
-		return AbstractContainerMenu.stillValid(ContainerLevelAccess.create(this.level, this.pos), player, ModContent.CHUNK_LOADER);
+		return AbstractContainerMenu.stillValid(ContainerLevelAccess.create(this.level, this.pos), player, ModContent.chunkLoader());
 	}
 
 	@Override

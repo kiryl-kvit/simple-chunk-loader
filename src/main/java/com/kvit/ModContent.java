@@ -23,36 +23,48 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 
 public final class ModContent {
-	public static Block CHUNK_LOADER;
-	public static Item CHUNK_LOADER_ITEM;
-	public static BlockEntityType<ChunkLoaderBlockEntity> CHUNK_LOADER_BLOCK_ENTITY;
+	private static Block chunkLoader;
+	private static Item chunkLoaderItem;
+	private static BlockEntityType<ChunkLoaderBlockEntity> chunkLoaderBlockEntity;
 
 	private ModContent() {
 	}
 
+	public static Block chunkLoader() {
+		return chunkLoader;
+	}
+
+	public static Item chunkLoaderItem() {
+		return chunkLoaderItem;
+	}
+
+	public static BlockEntityType<ChunkLoaderBlockEntity> chunkLoaderBlockEntity() {
+		return chunkLoaderBlockEntity;
+	}
+
 	public static void register() {
-		CHUNK_LOADER = Registry.register(BuiltInRegistries.BLOCK, SimpleChunkLoader.id("chunk_loader"),
+		chunkLoader = Registry.register(BuiltInRegistries.BLOCK, SimpleChunkLoader.id("chunk_loader"),
 			new ChunkLoaderBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.LODESTONE)
 				.setId(ResourceKey.create(Registries.BLOCK, SimpleChunkLoader.id("chunk_loader")))));
 
-		CHUNK_LOADER_ITEM = Registry.register(BuiltInRegistries.ITEM, SimpleChunkLoader.id("chunk_loader"),
+		chunkLoaderItem = Registry.register(BuiltInRegistries.ITEM, SimpleChunkLoader.id("chunk_loader"),
 			new ChunkLoaderBlockItem(
-				CHUNK_LOADER,
+				chunkLoader,
 				new Item.Properties()
 					.setId(ResourceKey.create(Registries.ITEM, SimpleChunkLoader.id("chunk_loader"))),
 				Items.LODESTONE,
 				false
 			));
 
-		CHUNK_LOADER_BLOCK_ENTITY = Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE, SimpleChunkLoader.id("chunk_loader"),
-			FabricBlockEntityTypeBuilder.create(ChunkLoaderBlockEntity::new, CHUNK_LOADER).build());
-		PolymerBlockUtils.registerBlockEntity(CHUNK_LOADER_BLOCK_ENTITY);
+		chunkLoaderBlockEntity = Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE, SimpleChunkLoader.id("chunk_loader"),
+			FabricBlockEntityTypeBuilder.create(ChunkLoaderBlockEntity::new, chunkLoader).build());
+		PolymerBlockUtils.registerBlockEntity(chunkLoaderBlockEntity);
 
 		CreativeModeTab tab = PolymerItemGroupUtils.builder()
 			.title(Component.literal("Simple Chunk Loader"))
 			.icon(() -> new ItemStack(Items.LODESTONE))
 			.displayItems((params, output) -> {
-				output.accept(CHUNK_LOADER_ITEM);
+				output.accept(chunkLoaderItem);
 			})
 			.build();
 		PolymerItemGroupUtils.registerPolymerItemGroup(
@@ -61,7 +73,7 @@ public final class ModContent {
 		);
 
 		ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.FUNCTIONAL_BLOCKS).register(entries -> {
-			entries.accept(CHUNK_LOADER_ITEM);
+			entries.accept(chunkLoaderItem);
 		});
 	}
 }
