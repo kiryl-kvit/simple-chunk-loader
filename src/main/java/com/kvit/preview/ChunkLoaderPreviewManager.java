@@ -10,14 +10,13 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class ChunkLoaderPreviewManager {
-	private static final Map<UUID, PreviewSession> ACTIVE_PREVIEWS = new HashMap<>();
-	private static final DustParticleOptions CENTER_PARTICLE = new DustParticleOptions(0x66E0FF, 3.5F);
+	private static final Map<UUID, PreviewSession> ACTIVE_PREVIEWS = new ConcurrentHashMap<>();
 
 	private ChunkLoaderPreviewManager() {
 	}
