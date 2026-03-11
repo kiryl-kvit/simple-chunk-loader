@@ -134,29 +134,29 @@ public final class ChunkLoaderMenu extends ChestMenu {
 
 		this.container.setItem(ENABLE_SLOT, actionItem(
 			enabled ? Items.LEVER : Items.REDSTONE_TORCH,
-			Component.translatable(enabled ? "menu.simple-chunk-loader.disable_loader" : "menu.simple-chunk-loader.enable_loader")
+			Component.literal(enabled ? "Disable loader" : "Enable loader")
 				.withStyle(enabled ? ChatFormatting.RED : ChatFormatting.GREEN),
-			Component.translatable(enabled ? "menu.simple-chunk-loader.loader_enabled" : "menu.simple-chunk-loader.loader_disabled")
+			Component.literal(enabled ? "Loader status: enabled" : "Loader status: disabled")
 				.withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GOLD)
 		));
 
 		this.container.setItem(PREVIEW_SLOT, actionItem(
 			previewing ? Items.ENDER_EYE : Items.SPYGLASS,
-			Component.translatable(previewing ? "menu.simple-chunk-loader.hide_area" : "menu.simple-chunk-loader.show_area")
+			Component.literal(previewing ? "Hide Area" : "Show Area")
 				.withStyle(previewing ? ChatFormatting.YELLOW : ChatFormatting.GREEN),
-			Component.translatable("menu.simple-chunk-loader.preview_persistent").withStyle(ChatFormatting.GRAY)
+			Component.literal("Preview stays visible until you turn it off.").withStyle(ChatFormatting.GRAY)
 		));
 
 		int currentLevel = blockEntity.getExpansionLevel();
 		int maxLevel = SimpleChunkLoader.getConfig().maxExpansionLevel();
 		int areaSize = 1 + 2 * currentLevel;
-		Component areaLore = Component.translatable("menu.simple-chunk-loader.area_size", areaSize, areaSize)
+		Component areaLore = Component.literal("Area: " + areaSize + "x" + areaSize + " chunks")
 			.withStyle(ChatFormatting.GRAY);
 
 		boolean canExpand = currentLevel < maxLevel;
 		this.container.setItem(EXPAND_SLOT, actionItem(
 			canExpand ? Items.LIME_DYE : Items.GRAY_DYE,
-			Component.translatable("menu.simple-chunk-loader.expand_area")
+			Component.literal("Expand Area")
 				.withStyle(canExpand ? ChatFormatting.GREEN : ChatFormatting.DARK_GRAY),
 			areaLore
 		));
@@ -164,7 +164,7 @@ public final class ChunkLoaderMenu extends ChestMenu {
 		boolean canShrink = currentLevel > 0;
 		this.container.setItem(SHRINK_SLOT, actionItem(
 			canShrink ? Items.RED_DYE : Items.GRAY_DYE,
-			Component.translatable("menu.simple-chunk-loader.shrink_area")
+			Component.literal("Shrink Area")
 				.withStyle(canShrink ? ChatFormatting.RED : ChatFormatting.DARK_GRAY),
 			areaLore
 		));
