@@ -44,7 +44,15 @@ public final class ChunkLoaderBlock extends BaseEntityBlock implements PolymerBl
 
     @Override
     public BlockState getPolymerBlockState(BlockState state, PacketContext context) {
+        if (canSyncRawToClient(context)) {
+            return state;
+        }
         return Blocks.LODESTONE.defaultBlockState();
+    }
+
+    @Override
+    public boolean canSyncRawToClient(PacketContext context) {
+        return ModContent.isModdedClient(context);
     }
 
     @Override

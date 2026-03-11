@@ -19,6 +19,13 @@ repositories {
 	maven {
 		url = 'https://maven.nucleoid.xyz'
 	}
+	// JEI
+	maven {
+		url = 'https://maven.blamejared.com'
+		content {
+			includeGroup 'mezz.jei'
+		}
+	}
 }
 
 loom {
@@ -42,7 +49,10 @@ dependencies {
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 	modImplementation include("eu.pb4:polymer-core:0.15.2+1.21.11")
-	
+
+	// Recipe viewers (runtime-only for dev testing, not bundled)
+	// JEI - 1.21.11
+	modLocalRuntime "mezz.jei:jei-1.21.11-fabric:27.4.0.15"
 }
 
 processResources {

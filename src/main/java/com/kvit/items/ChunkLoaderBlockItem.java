@@ -1,5 +1,6 @@
 package com.kvit.items;
 
+import com.kvit.ModContent;
 import com.kvit.SimpleChunkLoader;
 import com.kvit.loader.ChunkLoaderManager;
 import eu.pb4.polymer.core.api.item.PolymerBlockItem;
@@ -42,9 +43,25 @@ public final class ChunkLoaderBlockItem extends PolymerBlockItem {
     }
 
     @Override
+    public Item getPolymerItem(ItemStack itemStack, PacketContext context) {
+        if (canSyncRawToClient(context)) {
+            return this;
+        }
+        return super.getPolymerItem(itemStack, context);
+    }
+
+    @Override
     public ItemStack getPolymerItemStack(ItemStack itemStack, TooltipFlag tooltipType, PacketContext context) {
+        if (canSyncRawToClient(context)) {
+            return itemStack;
+        }
         ItemStack result = super.getPolymerItemStack(itemStack, tooltipType, context);
         result.set(DataComponents.ITEM_NAME, Component.literal("Chunk Loader"));
         return result;
+    }
+
+    @Override
+    public boolean canSyncRawToClient(PacketContext context) {
+        return ModContent.isModdedClient(context);
     }
 }
