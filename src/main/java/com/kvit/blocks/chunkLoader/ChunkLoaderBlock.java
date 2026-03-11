@@ -44,7 +44,15 @@ public final class ChunkLoaderBlock extends BaseEntityBlock implements PolymerBl
 
     @Override
     public BlockState getPolymerBlockState(BlockState state, PacketContext context) {
+        if (canSyncRawToClient(context)) {
+            return state;
+        }
         return Blocks.LODESTONE.defaultBlockState();
+    }
+
+    @Override
+    public boolean canSyncRawToClient(PacketContext context) {
+        return ModContent.isModdedClient(context);
     }
 
     @Override
@@ -74,7 +82,7 @@ public final class ChunkLoaderBlock extends BaseEntityBlock implements PolymerBl
             serverPlayer.openMenu(new SimpleMenuProvider(
                     (int syncId, net.minecraft.world.entity.player.Inventory inventory, Player openPlayer) ->
                             createMenu(syncId, inventory, serverLevel, pos, openPlayer),
-                    net.minecraft.network.chat.Component.literal("Chunk Loader")
+                    net.minecraft.network.chat.Component.literal(ModContent.CHUNK_LOADER_DISPLAY_NAME)
             ));
             return InteractionResult.SUCCESS_SERVER;
         }

@@ -11,12 +11,17 @@
 	},
 	"license": "CC0-1.0",
 	"icon": "assets/simple-chunk-loader/icon.png",
-	"environment": "server",
+	"environment": "*",
 	"entrypoints": {
 		"main": [
 			"com.kvit.SimpleChunkLoader"
 		],
-		"client": []
+		"client": [
+			"com.kvit.client.SimpleChunkLoaderClient"
+		],
+		"jei_mod_plugin": [
+			"com.kvit.client.compat.jei.SimpleChunkLoaderJeiPlugin"
+		]
 	},
 	"mixins": [],
 	"depends": {
@@ -24,5 +29,10 @@
 		"minecraft": "~1.21.11",
 		"java": ">=21",
 		"fabric-api": "*"
+	},
+	"suggests": {
+		"emi": "*",
+		"roughly-enough-items": "*",
+		"jei": "*"
 	}
 }

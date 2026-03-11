@@ -1,5 +1,6 @@
 {
 	"block.simple-chunk-loader.chunk_loader": "Chunk Loader",
+	"item.simple-chunk-loader.chunk_loader": "Chunk Loader",
 	"container.simple-chunk-loader.chunk_loader": "Chunk Loader",
 	"message.simple-chunk-loader.limit_reached": "Chunk loader limit reached (%s).",
 	"menu.simple-chunk-loader.show_area": "Show Area",

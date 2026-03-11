@@ -11,22 +11,18 @@ public record ChunkBounds(int minChunkX, int maxChunkX, int minChunkZ, int maxCh
     }
 
     public int minBlockX() {
-        return this.minChunkX * 16;
+        return this.minChunkX * ChunkLoaderManager.CHUNK_SIZE;
     }
 
-    public int maxBlockXInclusive() {
-        return ((this.maxChunkX + 1) * 16) - 1;
+    public int maxBlockXExclusive() {
+        return (this.maxChunkX + 1) * ChunkLoaderManager.CHUNK_SIZE;
     }
 
     public int minBlockZ() {
-        return this.minChunkZ * 16;
+        return this.minChunkZ * ChunkLoaderManager.CHUNK_SIZE;
     }
 
-    public int maxBlockZInclusive() {
-        return ((this.maxChunkZ + 1) * 16) - 1;
-    }
-
-    public int loadedChunkCount() {
-        return (this.maxChunkX - this.minChunkX + 1) * (this.maxChunkZ - this.minChunkZ + 1);
+    public int maxBlockZExclusive() {
+        return (this.maxChunkZ + 1) * ChunkLoaderManager.CHUNK_SIZE;
     }
 }
