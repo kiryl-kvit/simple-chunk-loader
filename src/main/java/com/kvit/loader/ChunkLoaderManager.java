@@ -54,9 +54,9 @@ public final class ChunkLoaderManager {
         applyWorld(level, data);
     }
 
-    public static void upsert(ServerLevel level, BlockPos pos, boolean enabled) {
+    public static void upsert(ServerLevel level, BlockPos pos, boolean enabled, int expansionLevel) {
         ChunkLoaderSavedData data = getData(level);
-        if (data.putIfChanged(pos, enabled)) {
+        if (data.putIfChanged(pos, enabled, expansionLevel)) {
             applyWorld(level, data);
         }
     }
@@ -67,10 +67,13 @@ public final class ChunkLoaderManager {
         applyWorld(level, data);
     }
 
-    public static ChunkBounds getChunkBounds(BlockPos pos) {
+    public static ChunkBounds getChunkBounds(BlockPos pos, int expansionLevel) {
         int chunkX = Math.floorDiv(pos.getX(), CHUNK_SIZE);
         int chunkZ = Math.floorDiv(pos.getZ(), CHUNK_SIZE);
-        return new ChunkBounds(chunkX, chunkX, chunkZ, chunkZ);
+        return new ChunkBounds(
+                chunkX - expansionLevel, chunkX + expansionLevel,
+                chunkZ - expansionLevel, chunkZ + expansionLevel
+        );
     }
 
     private static void applyWorld(ServerLevel level, ChunkLoaderSavedData data) {
@@ -80,7 +83,7 @@ public final class ChunkLoaderManager {
                 continue;
             }
 
-            ChunkBounds bounds = getChunkBounds(record.blockPos());
+            ChunkBounds bounds = getChunkBounds(record.blockPos(), record.expansionLevel());
             for (int chunkX = bounds.minChunkX(); chunkX <= bounds.maxChunkX(); chunkX++) {
                 for (int chunkZ = bounds.minChunkZ(); chunkZ <= bounds.maxChunkZ(); chunkZ++) {
                     desired.add(ChunkPos.asLong(chunkX, chunkZ));

@@ -1,6 +1,7 @@
 package com.kvit.menu;
 
 import com.kvit.ModContent;
+import com.kvit.SimpleChunkLoader;
 import com.kvit.blocks.chunkLoader.entity.ChunkLoaderBlockEntity;
 import com.kvit.preview.ChunkLoaderPreviewManager;
 import net.minecraft.ChatFormatting;
@@ -29,9 +30,12 @@ import java.util.UUID;
 
 public final class ChunkLoaderMenu extends ChestMenu {
 	private static final int MENU_SIZE = 27;
-	// Slot layout in 3x9 grid: row 2 col 3 (enable), row 2 col 5 (preview)
+	// Slot layout in 3x9 grid:
+	// row 2 col 3 (enable), row 2 col 5 (preview), row 2 col 7 (shrink), row 2 col 8 (expand)
 	private static final int ENABLE_SLOT = 11;
 	private static final int PREVIEW_SLOT = 13;
+	private static final int SHRINK_SLOT = 15;
+	private static final int EXPAND_SLOT = 16;
 	private static final ItemStack FILLER_TEMPLATE;
 
 	static {
@@ -93,6 +97,17 @@ public final class ChunkLoaderMenu extends ChestMenu {
 				}
 			}
 			case ENABLE_SLOT -> blockEntity.setEnabled(!blockEntity.isEnabled());
+			case EXPAND_SLOT -> {
+				int maxLevel = SimpleChunkLoader.getConfig().maxExpansionLevel();
+				if (blockEntity.getExpansionLevel() < maxLevel) {
+					blockEntity.setExpansionLevel(blockEntity.getExpansionLevel() + 1);
+				}
+			}
+			case SHRINK_SLOT -> {
+				if (blockEntity.getExpansionLevel() > 0) {
+					blockEntity.setExpansionLevel(blockEntity.getExpansionLevel() - 1);
+				}
+			}
 			default -> {
 				return;
 			}
@@ -119,17 +134,39 @@ public final class ChunkLoaderMenu extends ChestMenu {
 
 		this.container.setItem(ENABLE_SLOT, actionItem(
 			enabled ? Items.LEVER : Items.REDSTONE_TORCH,
-			Component.literal(enabled ? "Disable loader" : "Enable loader")
+			Component.translatable(enabled ? "menu.simple-chunk-loader.disable_loader" : "menu.simple-chunk-loader.enable_loader")
 				.withStyle(enabled ? ChatFormatting.RED : ChatFormatting.GREEN),
-			Component.literal(enabled ? "Loader status: enabled" : "Loader status: disabled")
+			Component.translatable(enabled ? "menu.simple-chunk-loader.loader_enabled" : "menu.simple-chunk-loader.loader_disabled")
 				.withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GOLD)
 		));
 
 		this.container.setItem(PREVIEW_SLOT, actionItem(
 			previewing ? Items.ENDER_EYE : Items.SPYGLASS,
-			Component.literal(previewing ? "Hide Area" : "Show Area")
+			Component.translatable(previewing ? "menu.simple-chunk-loader.hide_area" : "menu.simple-chunk-loader.show_area")
 				.withStyle(previewing ? ChatFormatting.YELLOW : ChatFormatting.GREEN),
-			Component.literal("Preview stays visible until you turn it off.").withStyle(ChatFormatting.GRAY)
+			Component.translatable("menu.simple-chunk-loader.preview_persistent").withStyle(ChatFormatting.GRAY)
+		));
+
+		int currentLevel = blockEntity.getExpansionLevel();
+		int maxLevel = SimpleChunkLoader.getConfig().maxExpansionLevel();
+		int areaSize = 1 + 2 * currentLevel;
+		Component areaLore = Component.translatable("menu.simple-chunk-loader.area_size", areaSize, areaSize)
+			.withStyle(ChatFormatting.GRAY);
+
+		boolean canExpand = currentLevel < maxLevel;
+		this.container.setItem(EXPAND_SLOT, actionItem(
+			canExpand ? Items.LIME_DYE : Items.GRAY_DYE,
+			Component.translatable("menu.simple-chunk-loader.expand_area")
+				.withStyle(canExpand ? ChatFormatting.GREEN : ChatFormatting.DARK_GRAY),
+			areaLore
+		));
+
+		boolean canShrink = currentLevel > 0;
+		this.container.setItem(SHRINK_SLOT, actionItem(
+			canShrink ? Items.RED_DYE : Items.GRAY_DYE,
+			Component.translatable("menu.simple-chunk-loader.shrink_area")
+				.withStyle(canShrink ? ChatFormatting.RED : ChatFormatting.DARK_GRAY),
+			areaLore
 		));
 	}
 

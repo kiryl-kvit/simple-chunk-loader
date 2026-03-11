@@ -30,7 +30,7 @@ public final class ChunkLoaderBlockItem extends PolymerBlockItem {
             if (server != null && !ChunkLoaderManager.canPlaceAnother(server)) {
                 if (context.getPlayer() instanceof ServerPlayer serverPlayer) {
                     serverPlayer.sendSystemMessage(
-                            Component.literal("Chunk loader limit reached (" + SimpleChunkLoader.getConfig().maxLoaders() + ").")
+                            Component.translatable("message.simple-chunk-loader.limit_reached", SimpleChunkLoader.getConfig().maxLoaders())
                                     .withStyle(ChatFormatting.RED),
                             false
                     );
@@ -56,7 +56,7 @@ public final class ChunkLoaderBlockItem extends PolymerBlockItem {
             return itemStack;
         }
         ItemStack result = super.getPolymerItemStack(itemStack, tooltipType, context);
-        result.set(DataComponents.ITEM_NAME, Component.literal(ModContent.CHUNK_LOADER_DISPLAY_NAME));
+        result.set(DataComponents.ITEM_NAME, Component.translatable("item.simple-chunk-loader.chunk_loader"));
         return result;
     }
 
