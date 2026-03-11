@@ -31,7 +31,7 @@ public final class ChunkLoaderSavedData extends SavedData {
             "simple_chunk_loader",
             ChunkLoaderSavedData::new,
             CODEC,
-            DataFixTypes.SAVED_DATA_RANDOM_SEQUENCES
+            DataFixTypes.SAVED_DATA_COMMAND_STORAGE
     );
 
     private final Map<Long, ChunkLoaderRecord> loaders;
