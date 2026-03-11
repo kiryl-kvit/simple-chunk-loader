@@ -1,0 +1,28 @@
+{
+	"schemaVersion": 1,
+	"id": "simple-chunk-loader",
+	"version": "${version}",
+	"name": "Simple Chunk Loader",
+	"description": "Simple chunk loader for server with friends",
+	"authors": ["Kiryl Kvit"],
+	"contact": {
+		"homepage": "https://github.com/kiryl-kvit/simple-chunk-loader",
+		"sources": "https://github.com/kiryl-kvit/simple-chunk-loader"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/simple-chunk-loader/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.kvit.SimpleChunkLoader"
+		],
+		"client": []
+	},
+	"mixins": [],
+	"depends": {
+		"fabricloader": ">=0.18.4",
+		"minecraft": "~1.21.11",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}

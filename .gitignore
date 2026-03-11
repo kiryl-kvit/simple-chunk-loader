@@ -1,0 +1,25 @@
+.gradle/
+build/
+out/
+run/
+
+# IDE files
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs and crash dumps
+logs/
+crash-reports/
+hs_err_pid*
