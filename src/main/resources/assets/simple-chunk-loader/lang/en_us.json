@@ -2,6 +2,7 @@
 	"block.simple-chunk-loader.chunk_loader": "Chunk Loader",
 	"item.simple-chunk-loader.chunk_loader": "Chunk Loader",
 	"container.simple-chunk-loader.chunk_loader": "Chunk Loader",
+	"itemGroup.simple-chunk-loader.chunk_loader": "Simple Chunk Loader",
 	"message.simple-chunk-loader.limit_reached": "Chunk loader limit reached (%s).",
 	"menu.simple-chunk-loader.show_area": "Show Area",
 	"menu.simple-chunk-loader.hide_area": "Hide Area",
@@ -14,5 +15,8 @@
 	"menu.simple-chunk-loader.stats_chunk_info": "Loads the chunk this block is placed in.",
 	"menu.simple-chunk-loader.stats_status": "Current status: %s",
 	"menu.simple-chunk-loader.status_on": "on",
-	"menu.simple-chunk-loader.status_off": "off"
+	"menu.simple-chunk-loader.status_off": "off",
+	"menu.simple-chunk-loader.expand_area": "Expand Area",
+	"menu.simple-chunk-loader.shrink_area": "Shrink Area",
+	"menu.simple-chunk-loader.area_size": "Area: %sx%s chunks"
 }

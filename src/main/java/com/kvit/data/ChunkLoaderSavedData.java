@@ -10,16 +10,20 @@ import net.minecraft.world.level.saveddata.SavedDataType;
 import java.util.*;
 
 public final class ChunkLoaderSavedData extends SavedData {
+    private static final String FIELD_LOADERS = "loaders";
+    private static final String FIELD_MANAGED_CHUNKS = "managed_chunks";
+    private static final String DATA_NAME = "simple_chunk_loader";
+
     private static final Codec<ChunkLoaderSavedData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.unboundedMap(Codec.STRING, ChunkLoaderRecord.CODEC)
-                    .optionalFieldOf("loaders", Map.of())
+                    .optionalFieldOf(FIELD_LOADERS, Map.of())
                     .forGetter(data -> {
                         Map<String, ChunkLoaderRecord> out = new HashMap<>(data.loaders.size() * 2);
                         data.loaders.forEach((k, v) -> out.put(Long.toString(k), v));
                         return out;
                     }),
             Codec.LONG.listOf()
-                    .optionalFieldOf("managed_chunks", List.of())
+                    .optionalFieldOf(FIELD_MANAGED_CHUNKS, List.of())
                     .forGetter(data -> List.copyOf(data.managedChunks))
     ).apply(instance, (stringLoaders, managedChunks) -> {
         Map<Long, ChunkLoaderRecord> loaders = new HashMap<>();
@@ -28,7 +32,7 @@ public final class ChunkLoaderSavedData extends SavedData {
     }));
 
     public static final SavedDataType<ChunkLoaderSavedData> TYPE = new SavedDataType<>(
-            "simple_chunk_loader",
+            DATA_NAME,
             ChunkLoaderSavedData::new,
             CODEC,
             DataFixTypes.SAVED_DATA_COMMAND_STORAGE
@@ -54,18 +58,18 @@ public final class ChunkLoaderSavedData extends SavedData {
         return this.loaders.size();
     }
 
-    public void put(BlockPos pos, boolean enabled) {
+    public void put(BlockPos pos, boolean enabled, int expansionLevel) {
         long key = ChunkLoaderRecord.key(pos);
-        ChunkLoaderRecord next = new ChunkLoaderRecord(pos.getX(), pos.getY(), pos.getZ(), enabled);
+        ChunkLoaderRecord next = new ChunkLoaderRecord(pos.getX(), pos.getY(), pos.getZ(), enabled, expansionLevel);
         ChunkLoaderRecord previous = this.loaders.put(key, next);
         if (!next.equals(previous)) {
             this.setDirty();
         }
     }
 
-    public boolean putIfChanged(BlockPos pos, boolean enabled) {
+    public boolean putIfChanged(BlockPos pos, boolean enabled, int expansionLevel) {
         long key = ChunkLoaderRecord.key(pos);
-        ChunkLoaderRecord next = new ChunkLoaderRecord(pos.getX(), pos.getY(), pos.getZ(), enabled);
+        ChunkLoaderRecord next = new ChunkLoaderRecord(pos.getX(), pos.getY(), pos.getZ(), enabled, expansionLevel);
         ChunkLoaderRecord previous = this.loaders.get(key);
         if (next.equals(previous)) {
             return false;

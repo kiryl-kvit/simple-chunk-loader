@@ -98,7 +98,7 @@ public final class ModContent {
 		});
 
 		CreativeModeTab tab = PolymerItemGroupUtils.builder()
-			.title(Component.literal("Simple Chunk Loader"))
+			.title(Component.translatable("itemGroup.simple-chunk-loader.chunk_loader"))
 			.icon(() -> new ItemStack(Items.LODESTONE))
 			.displayItems((params, output) -> {
 				output.accept(chunkLoaderItem);

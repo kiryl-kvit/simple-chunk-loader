@@ -31,15 +31,13 @@ public final class ChunkLoaderPreviewManager {
 			return;
 		}
 		BlockPos pos = blockEntity.getBlockPos().immutable();
-		PreviewSession next = new PreviewSession(
-			serverLevel.dimension(), pos, ChunkLoaderManager.getChunkBounds(pos)
-		);
 		PreviewSession current = ACTIVE_PREVIEWS.get(player.getUUID());
 
-		if (next.equals(current)) {
+		if (current != null && current.dimension().equals(serverLevel.dimension()) && current.pos().equals(pos)) {
 			ACTIVE_PREVIEWS.remove(player.getUUID());
 		} else {
-			ACTIVE_PREVIEWS.put(player.getUUID(), next);
+			ChunkBounds bounds = ChunkLoaderManager.getChunkBounds(pos, blockEntity.getExpansionLevel());
+			ACTIVE_PREVIEWS.put(player.getUUID(), new PreviewSession(serverLevel.dimension(), pos, bounds));
 		}
 	}
 
@@ -76,7 +74,10 @@ public final class ChunkLoaderPreviewManager {
 				continue;
 			}
 
-			render(level, player, blockEntity, entry.getValue().bounds(), config.previewParticleStep());
+			// Re-derive bounds from the block entity so the preview updates
+			// immediately when the expansion level is changed through the menu.
+			ChunkBounds bounds = ChunkLoaderManager.getChunkBounds(blockEntity.getBlockPos(), blockEntity.getExpansionLevel());
+			render(level, player, blockEntity, bounds, config.previewParticleStep());
 		}
 	}
 

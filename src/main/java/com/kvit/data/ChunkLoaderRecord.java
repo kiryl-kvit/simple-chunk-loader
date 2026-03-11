@@ -4,12 +4,19 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
 
-public record ChunkLoaderRecord(int x, int y, int z, boolean enabled) {
+public record ChunkLoaderRecord(int x, int y, int z, boolean enabled, int expansionLevel) {
+    private static final String FIELD_X = "x";
+    private static final String FIELD_Y = "y";
+    private static final String FIELD_Z = "z";
+    private static final String FIELD_ENABLED = "enabled";
+    private static final String FIELD_EXPANSION_LEVEL = "expansionLevel";
+
     public static final Codec<ChunkLoaderRecord> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            Codec.INT.fieldOf("x").forGetter(ChunkLoaderRecord::x),
-            Codec.INT.fieldOf("y").forGetter(ChunkLoaderRecord::y),
-            Codec.INT.fieldOf("z").forGetter(ChunkLoaderRecord::z),
-            Codec.BOOL.fieldOf("enabled").forGetter(ChunkLoaderRecord::enabled)
+            Codec.INT.fieldOf(FIELD_X).forGetter(ChunkLoaderRecord::x),
+            Codec.INT.fieldOf(FIELD_Y).forGetter(ChunkLoaderRecord::y),
+            Codec.INT.fieldOf(FIELD_Z).forGetter(ChunkLoaderRecord::z),
+            Codec.BOOL.fieldOf(FIELD_ENABLED).forGetter(ChunkLoaderRecord::enabled),
+            Codec.INT.optionalFieldOf(FIELD_EXPANSION_LEVEL, 0).forGetter(ChunkLoaderRecord::expansionLevel)
     ).apply(instance, ChunkLoaderRecord::new));
 
     public static long key(BlockPos pos) {

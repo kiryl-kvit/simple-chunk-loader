@@ -1,6 +1,7 @@
 package com.kvit.blocks.chunkLoader.entity;
 
 import com.kvit.ModContent;
+import com.kvit.SimpleChunkLoader;
 import com.kvit.loader.ChunkLoaderManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -10,7 +11,11 @@ import net.minecraft.world.level.storage.ValueOutput;
 import org.jspecify.annotations.NonNull;
 
 public final class ChunkLoaderBlockEntity extends BlockEntity {
+    private static final String NBT_ENABLED = "Enabled";
+    private static final String NBT_EXPANSION_LEVEL = "ExpansionLevel";
+
     private boolean enabled = true;
+    private int expansionLevel = 0;
 
     public ChunkLoaderBlockEntity(BlockPos pos, BlockState state) {
         super(ModContent.chunkLoaderBlockEntity(), pos, state);
@@ -28,20 +33,39 @@ public final class ChunkLoaderBlockEntity extends BlockEntity {
         this.enabled = enabled;
         this.setChanged();
         if (this.level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
-            ChunkLoaderManager.upsert(serverLevel, this.getBlockPos(), this.enabled);
+            ChunkLoaderManager.upsert(serverLevel, this.getBlockPos(), this.enabled, this.expansionLevel);
+        }
+    }
+
+    public int getExpansionLevel() {
+        return this.expansionLevel;
+    }
+
+    public void setExpansionLevel(int expansionLevel) {
+        int clamped = Math.clamp(expansionLevel, 0, SimpleChunkLoader.getConfig().maxExpansionLevel());
+        if (this.expansionLevel == clamped) {
+            return;
+        }
+
+        this.expansionLevel = clamped;
+        this.setChanged();
+        if (this.level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+            ChunkLoaderManager.upsert(serverLevel, this.getBlockPos(), this.enabled, this.expansionLevel);
         }
     }
 
     @Override
     protected void loadAdditional(@NonNull ValueInput input) {
         super.loadAdditional(input);
-        this.enabled = input.getBooleanOr("Enabled", true);
+        this.enabled = input.getBooleanOr(NBT_ENABLED, true);
+        this.expansionLevel = input.getIntOr(NBT_EXPANSION_LEVEL, 0);
     }
 
     @Override
     protected void saveAdditional(@NonNull ValueOutput output) {
         super.saveAdditional(output);
-        output.putBoolean("Enabled", this.enabled);
+        output.putBoolean(NBT_ENABLED, this.enabled);
+        output.putInt(NBT_EXPANSION_LEVEL, this.expansionLevel);
     }
 
     @Override

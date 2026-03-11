@@ -9,10 +9,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Stream;
 
-public record SimpleChunkLoaderConfig(int maxLoaders, int previewRefreshTicks, int previewParticleStep) {
+public record SimpleChunkLoaderConfig(int maxLoaders, int previewRefreshTicks, int previewParticleStep, int maxExpansionLevel) {
+    private static final String KEY_MAX_LOADERS = "max_loaders";
+    private static final String KEY_PREVIEW_REFRESH_TICKS = "preview_refresh_ticks";
+    private static final String KEY_PREVIEW_PARTICLE_STEP = "preview_particle_step";
+    private static final String KEY_MAX_EXPANSION_LEVEL = "max_expansion_level";
+
     private static final int DEFAULT_MAX_LOADERS = 16;
     private static final int DEFAULT_PREVIEW_REFRESH_TICKS = 10;
     private static final int DEFAULT_PREVIEW_PARTICLE_STEP = 1;
+    private static final int DEFAULT_MAX_EXPANSION_LEVEL = 3;
 
     public static SimpleChunkLoaderConfig load() {
         Path configDir = FabricLoader.getInstance().getConfigDir();
@@ -25,8 +31,9 @@ public record SimpleChunkLoaderConfig(int maxLoaders, int previewRefreshTicks, i
             }
 
             int[] maxLoaders = {DEFAULT_MAX_LOADERS};
-            int[] previewRefreshTicks = {DEFAULT_PREVIEW_REFRESH_TICKS};
-            int[] previewParticleStep = {DEFAULT_PREVIEW_PARTICLE_STEP};
+			int[] previewRefreshTicks = {DEFAULT_PREVIEW_REFRESH_TICKS};
+			int[] previewParticleStep = {DEFAULT_PREVIEW_PARTICLE_STEP};
+			int[] maxExpansionLevel = {DEFAULT_MAX_EXPANSION_LEVEL};
 
             try (Stream<String> lines = Files.lines(configPath, StandardCharsets.UTF_8)) {
                 lines.forEach(rawLine -> {
@@ -44,9 +51,10 @@ public record SimpleChunkLoaderConfig(int maxLoaders, int previewRefreshTicks, i
                     String value = line.substring(separator + 1).strip();
                     try {
                         switch (key) {
-                            case "max_loaders" -> maxLoaders[0] = Math.max(0, Integer.parseInt(value));
-                            case "preview_refresh_ticks" -> previewRefreshTicks[0] = Math.max(2, Integer.parseInt(value));
-                            case "preview_particle_step" -> previewParticleStep[0] = Math.max(1, Integer.parseInt(value));
+                            case KEY_MAX_LOADERS -> maxLoaders[0] = Math.max(0, Integer.parseInt(value));
+                            case KEY_PREVIEW_REFRESH_TICKS -> previewRefreshTicks[0] = Math.max(2, Integer.parseInt(value));
+                            case KEY_PREVIEW_PARTICLE_STEP -> previewParticleStep[0] = Math.max(1, Integer.parseInt(value));
+                            case KEY_MAX_EXPANSION_LEVEL -> maxExpansionLevel[0] = Math.max(0, Integer.parseInt(value));
                             default -> { }
                         }
                     } catch (NumberFormatException exception) {
@@ -55,13 +63,14 @@ public record SimpleChunkLoaderConfig(int maxLoaders, int previewRefreshTicks, i
                 });
             }
 
-            return new SimpleChunkLoaderConfig(maxLoaders[0], previewRefreshTicks[0], previewParticleStep[0]);
+            return new SimpleChunkLoaderConfig(maxLoaders[0], previewRefreshTicks[0], previewParticleStep[0], maxExpansionLevel[0]);
         } catch (IOException exception) {
             SimpleChunkLoader.LOGGER.error("Failed to load config, using defaults", exception);
             return new SimpleChunkLoaderConfig(
                     DEFAULT_MAX_LOADERS,
                     DEFAULT_PREVIEW_REFRESH_TICKS,
-                    DEFAULT_PREVIEW_PARTICLE_STEP
+                    DEFAULT_PREVIEW_PARTICLE_STEP,
+                    DEFAULT_MAX_EXPANSION_LEVEL
             );
         }
     }
@@ -81,13 +90,21 @@ public record SimpleChunkLoaderConfig(int maxLoaders, int previewRefreshTicks, i
     private static String defaultConfigContents() {
         return """
                 # Maximum number of chunk loader blocks that may exist across all dimensions.
-                max_loaders = %d
+                %s = %d
                 
                 # Preview particle refresh interval in ticks.
-                preview_refresh_ticks = %d
+                %s = %d
                 
                 # Spacing between preview particles in blocks.
-                preview_particle_step = %d
-                """.formatted(DEFAULT_MAX_LOADERS, DEFAULT_PREVIEW_REFRESH_TICKS, DEFAULT_PREVIEW_PARTICLE_STEP);
+                %s = %d
+                
+                # Maximum expansion level for chunk loaders (0 = 1x1, 1 = 3x3, 2 = 5x5, etc.).
+                %s = %d
+                """.formatted(
+                KEY_MAX_LOADERS, DEFAULT_MAX_LOADERS,
+                KEY_PREVIEW_REFRESH_TICKS, DEFAULT_PREVIEW_REFRESH_TICKS,
+                KEY_PREVIEW_PARTICLE_STEP, DEFAULT_PREVIEW_PARTICLE_STEP,
+                KEY_MAX_EXPANSION_LEVEL, DEFAULT_MAX_EXPANSION_LEVEL
+        );
     }
 }
