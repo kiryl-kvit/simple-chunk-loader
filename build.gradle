@@ -52,6 +52,8 @@ dependencies {
 
 	// Recipe viewers (runtime-only for dev testing, not bundled)
 	// JEI - 1.21.11
+	modCompileOnly "mezz.jei:jei-1.21.11-common-api:27.4.0.15"
+	modCompileOnly "mezz.jei:jei-1.21.11-fabric-api:27.4.0.15"
 	modLocalRuntime "mezz.jei:jei-1.21.11-fabric:27.4.0.15"
 }
 

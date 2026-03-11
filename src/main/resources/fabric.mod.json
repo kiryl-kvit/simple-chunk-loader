@@ -18,6 +18,9 @@
 		],
 		"client": [
 			"com.kvit.client.SimpleChunkLoaderClient"
+		],
+		"jei_mod_plugin": [
+			"com.kvit.client.compat.jei.SimpleChunkLoaderJeiPlugin"
 		]
 	},
 	"mixins": [],
