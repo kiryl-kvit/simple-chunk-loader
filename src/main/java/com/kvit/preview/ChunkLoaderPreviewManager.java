@@ -110,9 +110,6 @@ public final class ChunkLoaderPreviewManager {
 			send(level, player, particle, maxX, pillarY, minZ);
 			send(level, player, particle, maxX, pillarY, maxZ);
 		}
-
-		// Center marker
-		send(level, player, CENTER_PARTICLE, blockEntity.getBlockPos().getX() + 0.5D, y + 0.4D, blockEntity.getBlockPos().getZ() + 0.5D);
 	}
 
 	private static void send(ServerLevel level, ServerPlayer player, DustParticleOptions particle, double x, double y, double z) {
