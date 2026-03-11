@@ -8,16 +8,24 @@ import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public final class ChunkLoaderSavedData extends SavedData {
     private static final Codec<ChunkLoaderSavedData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.unboundedMap(Codec.STRING, ChunkLoaderRecord.CODEC)
                     .optionalFieldOf("loaders", Map.of())
-                    .forGetter(data -> data.loaders),
+                    .forGetter(data -> data.loaders.entrySet().stream()
+                            .collect(Collectors.toMap(
+                                    e -> Long.toString(e.getKey()),
+                                    Map.Entry::getValue))),
             Codec.LONG.listOf()
                     .optionalFieldOf("managed_chunks", List.of())
-                    .forGetter(data -> List.copyOf(data.managedChunks))
-    ).apply(instance, (loaders, managedChunks) -> new ChunkLoaderSavedData(loaders, new HashSet<>(managedChunks))));
+                    .forGetter(data -> new ArrayList<>(data.managedChunks))
+    ).apply(instance, (stringLoaders, managedChunks) -> {
+        Map<Long, ChunkLoaderRecord> loaders = new HashMap<>();
+        stringLoaders.values().forEach(record -> loaders.put(ChunkLoaderRecord.key(record.blockPos()), record));
+        return new ChunkLoaderSavedData(loaders, new HashSet<>(managedChunks));
+    }));
 
     public static final SavedDataType<ChunkLoaderSavedData> TYPE = new SavedDataType<>(
             "simple_chunk_loader",
@@ -26,14 +34,14 @@ public final class ChunkLoaderSavedData extends SavedData {
             DataFixTypes.SAVED_DATA_COMMAND_STORAGE
     );
 
-    private final Map<String, ChunkLoaderRecord> loaders;
+    private final Map<Long, ChunkLoaderRecord> loaders;
     private final Set<Long> managedChunks;
 
     public ChunkLoaderSavedData() {
         this(new HashMap<>(), new HashSet<>());
     }
 
-    private ChunkLoaderSavedData(Map<String, ChunkLoaderRecord> loaders, Set<Long> managedChunks) {
+    private ChunkLoaderSavedData(Map<Long, ChunkLoaderRecord> loaders, Set<Long> managedChunks) {
         this.loaders = new HashMap<>(loaders);
         this.managedChunks = new HashSet<>(managedChunks);
     }
@@ -47,7 +55,7 @@ public final class ChunkLoaderSavedData extends SavedData {
     }
 
     public void put(BlockPos pos, boolean enabled) {
-        String key = ChunkLoaderRecord.key(pos);
+        long key = ChunkLoaderRecord.key(pos);
         ChunkLoaderRecord next = new ChunkLoaderRecord(pos.getX(), pos.getY(), pos.getZ(), enabled);
         ChunkLoaderRecord previous = this.loaders.put(key, next);
         if (!next.equals(previous)) {

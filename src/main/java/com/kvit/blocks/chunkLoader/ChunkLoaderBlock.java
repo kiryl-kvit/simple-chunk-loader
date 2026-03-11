@@ -66,8 +66,7 @@ public final class ChunkLoaderBlock extends BaseEntityBlock implements PolymerBl
             return InteractionResult.SUCCESS;
         }
 
-        BlockEntity blockEntity = level.getBlockEntity(pos);
-        if (!(blockEntity instanceof ChunkLoaderBlockEntity)) {
+        if (!(level.getBlockEntity(pos) instanceof ChunkLoaderBlockEntity)) {
             return InteractionResult.PASS;
         }
 

@@ -23,7 +23,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.ItemLore;
 import org.jspecify.annotations.NonNull;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,6 +31,13 @@ public final class ChunkLoaderMenu extends ChestMenu {
 	private static final int MENU_SIZE = 27;
 	private static final int ENABLE_SLOT = 11;
 	private static final int PREVIEW_SLOT = 13;
+	private static final ItemStack FILLER_TEMPLATE;
+
+	static {
+		FILLER_TEMPLATE = new ItemStack(Items.GRAY_STAINED_GLASS_PANE);
+		FILLER_TEMPLATE.set(DataComponents.ITEM_NAME, plain(Component.literal(" ")));
+	}
+
 	private final SimpleContainer container;
 	private final ServerLevel level;
 	private final BlockPos pos;
@@ -126,9 +133,7 @@ public final class ChunkLoaderMenu extends ChestMenu {
 	}
 
 	private static ItemStack filler() {
-		ItemStack stack = new ItemStack(Items.GRAY_STAINED_GLASS_PANE);
-		stack.set(DataComponents.ITEM_NAME, plain(Component.literal(" ")));
-		return stack;
+		return FILLER_TEMPLATE.copy();
 	}
 
 	private static ItemStack actionItem(Item item, Component name, Component... loreLines) {
@@ -136,10 +141,7 @@ public final class ChunkLoaderMenu extends ChestMenu {
 		stack.set(DataComponents.ITEM_NAME, plain(name));
 
 		if (loreLines.length > 0) {
-			List<Component> lines = new ArrayList<>(loreLines.length);
-			for (Component loreLine : loreLines) {
-				lines.add(plain(loreLine));
-			}
+			List<Component> lines = Arrays.stream(loreLines).map(ChunkLoaderMenu::plain).toList();
 			stack.set(DataComponents.LORE, new ItemLore(lines));
 		}
 

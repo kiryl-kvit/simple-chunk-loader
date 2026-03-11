@@ -12,8 +12,8 @@ public record ChunkLoaderRecord(int x, int y, int z, boolean enabled) {
             Codec.BOOL.fieldOf("enabled").forGetter(ChunkLoaderRecord::enabled)
     ).apply(instance, ChunkLoaderRecord::new));
 
-    public static String key(BlockPos pos) {
-        return pos.getX() + ":" + pos.getY() + ":" + pos.getZ();
+    public static long key(BlockPos pos) {
+        return pos.asLong();
     }
 
     public BlockPos blockPos() {
