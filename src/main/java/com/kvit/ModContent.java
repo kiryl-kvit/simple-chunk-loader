@@ -6,10 +6,8 @@ import com.kvit.items.ChunkLoaderBlockItem;
 import eu.pb4.polymer.core.api.block.PolymerBlockUtils;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.minecraft.core.Registry;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
@@ -35,7 +33,6 @@ public final class ModContent {
 			new ChunkLoaderBlockItem(
 				CHUNK_LOADER,
 				new Item.Properties()
-					.component(DataComponents.ITEM_NAME, Component.literal("Chunk Loader"))
 					.setId(ResourceKey.create(Registries.ITEM, SimpleChunkLoader.id("chunk_loader"))),
 				Items.LODESTONE,
 				false
