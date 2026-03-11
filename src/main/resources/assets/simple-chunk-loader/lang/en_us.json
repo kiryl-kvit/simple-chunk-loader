@@ -1,0 +1,17 @@
+{
+	"block.simple-chunk-loader.chunk_loader": "Chunk Loader",
+	"container.simple-chunk-loader.chunk_loader": "Chunk Loader",
+	"message.simple-chunk-loader.limit_reached": "Chunk loader limit reached (%s).",
+	"menu.simple-chunk-loader.show_area": "Show Area",
+	"menu.simple-chunk-loader.hide_area": "Hide Area",
+	"menu.simple-chunk-loader.preview_persistent": "Preview stays visible until you turn it off.",
+	"menu.simple-chunk-loader.enable_loader": "Enable loader",
+	"menu.simple-chunk-loader.disable_loader": "Disable loader",
+	"menu.simple-chunk-loader.loader_enabled": "Loader status: enabled",
+	"menu.simple-chunk-loader.loader_disabled": "Loader status: disabled",
+	"menu.simple-chunk-loader.stats_title": "Chunk Loader Stats",
+	"menu.simple-chunk-loader.stats_chunk_info": "Loads the chunk this block is placed in.",
+	"menu.simple-chunk-loader.stats_status": "Current status: %s",
+	"menu.simple-chunk-loader.status_on": "on",
+	"menu.simple-chunk-loader.status_off": "off"
+}
