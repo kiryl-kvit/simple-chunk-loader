@@ -9,16 +9,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Stream;
 
-public record SimpleChunkLoaderConfig(int maxLoaders, int previewRefreshTicks, int previewParticleStep, int maxExpansionLevel) {
+public record SimpleChunkLoaderConfig(int maxLoaders, int previewRefreshTicks, int previewParticleStep, int maxExpansionLevel, boolean spawnersBypassPlayerCheck) {
     private static final String KEY_MAX_LOADERS = "max_loaders";
     private static final String KEY_PREVIEW_REFRESH_TICKS = "preview_refresh_ticks";
     private static final String KEY_PREVIEW_PARTICLE_STEP = "preview_particle_step";
     private static final String KEY_MAX_EXPANSION_LEVEL = "max_expansion_level";
+    private static final String KEY_SPAWNERS_BYPASS_PLAYER_CHECK = "spawners_bypass_player_check";
 
     private static final int DEFAULT_MAX_LOADERS = 16;
     private static final int DEFAULT_PREVIEW_REFRESH_TICKS = 10;
     private static final int DEFAULT_PREVIEW_PARTICLE_STEP = 1;
     private static final int DEFAULT_MAX_EXPANSION_LEVEL = 3;
+    private static final boolean DEFAULT_SPAWNERS_BYPASS_PLAYER_CHECK = true;
 
     public static SimpleChunkLoaderConfig load() {
         Path configDir = FabricLoader.getInstance().getConfigDir();
@@ -34,6 +36,7 @@ public record SimpleChunkLoaderConfig(int maxLoaders, int previewRefreshTicks, i
 			int[] previewRefreshTicks = {DEFAULT_PREVIEW_REFRESH_TICKS};
 			int[] previewParticleStep = {DEFAULT_PREVIEW_PARTICLE_STEP};
 			int[] maxExpansionLevel = {DEFAULT_MAX_EXPANSION_LEVEL};
+			boolean[] spawnersBypassPlayerCheck = {DEFAULT_SPAWNERS_BYPASS_PLAYER_CHECK};
 
             try (Stream<String> lines = Files.lines(configPath, StandardCharsets.UTF_8)) {
                 lines.forEach(rawLine -> {
@@ -55,6 +58,7 @@ public record SimpleChunkLoaderConfig(int maxLoaders, int previewRefreshTicks, i
                             case KEY_PREVIEW_REFRESH_TICKS -> previewRefreshTicks[0] = Math.max(2, Integer.parseInt(value));
                             case KEY_PREVIEW_PARTICLE_STEP -> previewParticleStep[0] = Math.max(1, Integer.parseInt(value));
                             case KEY_MAX_EXPANSION_LEVEL -> maxExpansionLevel[0] = Math.max(0, Integer.parseInt(value));
+                            case KEY_SPAWNERS_BYPASS_PLAYER_CHECK -> spawnersBypassPlayerCheck[0] = Boolean.parseBoolean(value);
                             default -> { }
                         }
                     } catch (NumberFormatException exception) {
@@ -63,14 +67,15 @@ public record SimpleChunkLoaderConfig(int maxLoaders, int previewRefreshTicks, i
                 });
             }
 
-            return new SimpleChunkLoaderConfig(maxLoaders[0], previewRefreshTicks[0], previewParticleStep[0], maxExpansionLevel[0]);
+            return new SimpleChunkLoaderConfig(maxLoaders[0], previewRefreshTicks[0], previewParticleStep[0], maxExpansionLevel[0], spawnersBypassPlayerCheck[0]);
         } catch (IOException exception) {
             SimpleChunkLoader.LOGGER.error("Failed to load config, using defaults", exception);
             return new SimpleChunkLoaderConfig(
                     DEFAULT_MAX_LOADERS,
                     DEFAULT_PREVIEW_REFRESH_TICKS,
                     DEFAULT_PREVIEW_PARTICLE_STEP,
-                    DEFAULT_MAX_EXPANSION_LEVEL
+                    DEFAULT_MAX_EXPANSION_LEVEL,
+                    DEFAULT_SPAWNERS_BYPASS_PLAYER_CHECK
             );
         }
     }
@@ -100,11 +105,15 @@ public record SimpleChunkLoaderConfig(int maxLoaders, int previewRefreshTicks, i
                 
                 # Maximum expansion level for chunk loaders (0 = 1x1, 1 = 3x3, 2 = 5x5, etc.).
                 %s = %d
+                
+                # Whether mob spawner blocks in force-loaded chunks should work without a nearby player.
+                %s = %s
                 """.formatted(
                 KEY_MAX_LOADERS, DEFAULT_MAX_LOADERS,
                 KEY_PREVIEW_REFRESH_TICKS, DEFAULT_PREVIEW_REFRESH_TICKS,
                 KEY_PREVIEW_PARTICLE_STEP, DEFAULT_PREVIEW_PARTICLE_STEP,
-                KEY_MAX_EXPANSION_LEVEL, DEFAULT_MAX_EXPANSION_LEVEL
+                KEY_MAX_EXPANSION_LEVEL, DEFAULT_MAX_EXPANSION_LEVEL,
+                KEY_SPAWNERS_BYPASS_PLAYER_CHECK, DEFAULT_SPAWNERS_BYPASS_PLAYER_CHECK
         );
     }
 }
