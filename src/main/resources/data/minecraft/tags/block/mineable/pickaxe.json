@@ -1,0 +1,6 @@
+{
+    "replace": false,
+    "values": [
+        "simple-chunk-loader:chunk_loader"
+    ]
+}
