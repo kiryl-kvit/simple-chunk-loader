@@ -64,12 +64,17 @@ public final class ChunkLoaderBlock extends BaseEntityBlock implements PolymerBl
     protected @NonNull InteractionResult useItemOn(@NonNull ItemStack stack, @NonNull BlockState state,
                                                    @NonNull Level level, @NonNull BlockPos pos, @NonNull Player player,
                                                    @NonNull InteractionHand hand, @NonNull BlockHitResult hit) {
-        return InteractionResult.TRY_WITH_EMPTY_HAND;
+        return openMenu(state, level, pos, player, hit);
     }
 
     @Override
     protected @NonNull InteractionResult useWithoutItem(@NonNull BlockState state, Level level, @NonNull BlockPos pos,
                                                         @NonNull Player player, @NonNull BlockHitResult hit) {
+        return openMenu(state, level, pos, player, hit);
+    }
+
+    private InteractionResult openMenu(BlockState state, Level level, BlockPos pos,
+                                       Player player, BlockHitResult hit) {
         if (level.isClientSide()) {
             return InteractionResult.SUCCESS;
         }
