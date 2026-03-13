@@ -321,22 +321,28 @@ public final class LoaderCommand {
 	}
 
 	private static Optional<Vec3> findTeleportTarget(ServerLevel level, BlockPos loaderPos) {
-		for (int radius = 1; radius <= 2; radius++) {
-			for (int verticalOffset : new int[]{0, 1, -1, 2}) {
-				for (Direction direction : Direction.Plane.HORIZONTAL) {
-					BlockPos candidate = loaderPos.relative(direction, radius).offset(0, verticalOffset, 0);
-					Vec3 safe = DismountHelper.findSafeDismountLocation(EntityType.PLAYER, level, candidate, true);
-					if (safe != null) {
-						return Optional.of(safe);
-					}
-				}
-			}
-		}
-
-		for (int verticalOffset : new int[]{1, 2, 0, -1}) {
+		for (int verticalOffset : new int[]{1, 0, 2, -1, 3}) {
 			Vec3 safe = DismountHelper.findSafeDismountLocation(EntityType.PLAYER, level, loaderPos.offset(0, verticalOffset, 0), true);
 			if (safe != null) {
 				return Optional.of(safe);
+			}
+		}
+
+		for (int radius = 1; radius <= 4; radius++) {
+			for (int verticalOffset : new int[]{0, 1, -1, 2, 3}) {
+				for (int xOffset = -radius; xOffset <= radius; xOffset++) {
+					for (int zOffset = -radius; zOffset <= radius; zOffset++) {
+						if (Math.max(Math.abs(xOffset), Math.abs(zOffset)) != radius) {
+							continue;
+						}
+
+						BlockPos candidate = loaderPos.offset(xOffset, verticalOffset, zOffset);
+						Vec3 safe = DismountHelper.findSafeDismountLocation(EntityType.PLAYER, level, candidate, true);
+						if (safe != null) {
+							return Optional.of(safe);
+						}
+					}
+				}
 			}
 		}
 

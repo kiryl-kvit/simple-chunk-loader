@@ -170,7 +170,6 @@ public final class ChunkLoaderManager {
         Objects.requireNonNull(server, "server");
 
         List<LoaderReference> loaders = new ArrayList<>();
-        int maxId = computeMaxId(server);
 
         for (ServerLevel level : server.getAllLevels()) {
             for (ChunkLoaderRecord record : getData(level).getLoaders()) {
@@ -185,21 +184,16 @@ public final class ChunkLoaderManager {
                 .thenComparingInt(loader -> loader.record().y())
                 .thenComparingInt(loader -> loader.record().z()));
 
-        Set<Integer> usedIds = new HashSet<>();
-        int nextId = maxId + 1;
+        int nextId = 1;
 
         for (LoaderReference loader : loaders) {
             ChunkLoaderRecord record = loader.record();
-            if (record.id() > 0 && usedIds.add(record.id())) {
+            if (record.id() == nextId) {
+                nextId++;
                 continue;
             }
 
-            while (usedIds.contains(nextId)) {
-                nextId++;
-            }
-
             getData(loader.level()).putIfChanged(record.withId(nextId));
-            usedIds.add(nextId);
             nextId++;
         }
     }
