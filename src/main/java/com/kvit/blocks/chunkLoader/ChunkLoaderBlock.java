@@ -83,14 +83,14 @@ public final class ChunkLoaderBlock extends BaseEntityBlock implements PolymerBl
             return InteractionResult.PASS;
         }
 
-        if (player instanceof ServerPlayer serverPlayer && level instanceof ServerLevel serverLevel) {
-            serverPlayer.openMenu(new SimpleMenuProvider(
-                    (int syncId, net.minecraft.world.entity.player.Inventory inventory, Player openPlayer) ->
-                            createMenu(syncId, inventory, serverLevel, pos, openPlayer),
-                    net.minecraft.network.chat.Component.literal("Chunk Loader")
-            ));
-            return InteractionResult.SUCCESS_SERVER;
-        }
+		if (player instanceof ServerPlayer serverPlayer && level instanceof ServerLevel serverLevel) {
+			serverPlayer.openMenu(new SimpleMenuProvider(
+					(int syncId, net.minecraft.world.entity.player.Inventory inventory, Player openPlayer) ->
+							createMenu(syncId, inventory, serverLevel, pos, openPlayer),
+					net.minecraft.network.chat.Component.literal(ModContent.CHUNK_LOADER_DISPLAY_NAME)
+			));
+			return InteractionResult.SUCCESS_SERVER;
+		}
 
         return InteractionResult.PASS;
     }
