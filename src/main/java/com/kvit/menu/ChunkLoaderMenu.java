@@ -36,6 +36,7 @@ public final class ChunkLoaderMenu extends ChestMenu {
 	private static final int PREVIEW_SLOT = 13;
 	private static final int SHRINK_SLOT = 15;
 	private static final int EXPAND_SLOT = 16;
+	private static final int SPAWNING_SLOT = 17;
 	private static final ItemStack FILLER_TEMPLATE;
 
 	static {
@@ -108,6 +109,7 @@ public final class ChunkLoaderMenu extends ChestMenu {
 					blockEntity.setExpansionLevel(blockEntity.getExpansionLevel() - 1);
 				}
 			}
+			case SPAWNING_SLOT -> blockEntity.setAllowNaturalSpawning(!blockEntity.isAllowNaturalSpawning());
 			default -> {
 				return;
 			}
@@ -167,6 +169,15 @@ public final class ChunkLoaderMenu extends ChestMenu {
 			Component.literal("Shrink Area")
 				.withStyle(canShrink ? ChatFormatting.RED : ChatFormatting.DARK_GRAY),
 			areaLore
+		));
+
+		boolean spawning = blockEntity.isAllowNaturalSpawning();
+		this.container.setItem(SPAWNING_SLOT, actionItem(
+			spawning ? Items.ZOMBIE_HEAD : Items.BARRIER,
+			Component.literal(spawning ? "Disable Mob Spawning" : "Enable Mob Spawning")
+				.withStyle(spawning ? ChatFormatting.RED : ChatFormatting.GREEN),
+			Component.literal(spawning ? "Natural mob spawning: enabled" : "Natural mob spawning: disabled")
+				.withStyle(spawning ? ChatFormatting.GREEN : ChatFormatting.GOLD)
 		));
 	}
 

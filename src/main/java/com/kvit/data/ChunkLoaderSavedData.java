@@ -12,6 +12,7 @@ import java.util.*;
 public final class ChunkLoaderSavedData extends SavedData {
     private static final String FIELD_LOADERS = "loaders";
     private static final String FIELD_MANAGED_CHUNKS = "managed_chunks";
+    private static final String FIELD_SPAWNING_CHUNKS = "spawning_chunks";
     private static final String DATA_NAME = "simple_chunk_loader";
 
     private static final Codec<ChunkLoaderSavedData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -24,11 +25,14 @@ public final class ChunkLoaderSavedData extends SavedData {
                     }),
             Codec.LONG.listOf()
                     .optionalFieldOf(FIELD_MANAGED_CHUNKS, List.of())
-                    .forGetter(data -> List.copyOf(data.managedChunks))
-    ).apply(instance, (stringLoaders, managedChunks) -> {
+                    .forGetter(data -> List.copyOf(data.managedChunks)),
+            Codec.LONG.listOf()
+                    .optionalFieldOf(FIELD_SPAWNING_CHUNKS, List.of())
+                    .forGetter(data -> List.copyOf(data.spawningChunks))
+    ).apply(instance, (stringLoaders, managedChunks, spawningChunks) -> {
         Map<Long, ChunkLoaderRecord> loaders = new HashMap<>();
         stringLoaders.values().forEach(record -> loaders.put(ChunkLoaderRecord.key(record.blockPos()), record));
-        return new ChunkLoaderSavedData(loaders, new HashSet<>(managedChunks));
+        return new ChunkLoaderSavedData(loaders, new HashSet<>(managedChunks), new HashSet<>(spawningChunks));
     }));
 
     public static final SavedDataType<ChunkLoaderSavedData> TYPE = new SavedDataType<>(
@@ -40,14 +44,16 @@ public final class ChunkLoaderSavedData extends SavedData {
 
     private final Map<Long, ChunkLoaderRecord> loaders;
     private final Set<Long> managedChunks;
+    private final Set<Long> spawningChunks;
 
     public ChunkLoaderSavedData() {
-        this(new HashMap<>(), new HashSet<>());
+        this(new HashMap<>(), new HashSet<>(), new HashSet<>());
     }
 
-    private ChunkLoaderSavedData(Map<Long, ChunkLoaderRecord> loaders, Set<Long> managedChunks) {
+    private ChunkLoaderSavedData(Map<Long, ChunkLoaderRecord> loaders, Set<Long> managedChunks, Set<Long> spawningChunks) {
         this.loaders = new HashMap<>(loaders);
         this.managedChunks = new HashSet<>(managedChunks);
+        this.spawningChunks = new HashSet<>(spawningChunks);
     }
 
     public Collection<ChunkLoaderRecord> getLoaders() {
@@ -63,19 +69,19 @@ public final class ChunkLoaderSavedData extends SavedData {
         return Optional.ofNullable(this.loaders.get(key));
     }
 
-    public void put(BlockPos pos, int id, boolean enabled, int expansionLevel) {
+    public void put(BlockPos pos, int id, boolean enabled, int expansionLevel, boolean allowNaturalSpawning) {
         long key = ChunkLoaderRecord.key(pos);
-        ChunkLoaderRecord next = new ChunkLoaderRecord(id, pos.getX(), pos.getY(), pos.getZ(), enabled, expansionLevel);
+        ChunkLoaderRecord next = new ChunkLoaderRecord(id, pos.getX(), pos.getY(), pos.getZ(), enabled, expansionLevel, allowNaturalSpawning);
         ChunkLoaderRecord replaced = this.loaders.put(key, next);
         if (!next.equals(replaced)) {
             this.setDirty();
         }
     }
 
-    public boolean putIfChanged(BlockPos pos, int id, boolean enabled, int expansionLevel) {
+    public boolean putIfChanged(BlockPos pos, int id, boolean enabled, int expansionLevel, boolean allowNaturalSpawning) {
         long key = ChunkLoaderRecord.key(pos);
         ChunkLoaderRecord previous = this.loaders.get(key);
-        ChunkLoaderRecord next = new ChunkLoaderRecord(id, pos.getX(), pos.getY(), pos.getZ(), enabled, expansionLevel);
+        ChunkLoaderRecord next = new ChunkLoaderRecord(id, pos.getX(), pos.getY(), pos.getZ(), enabled, expansionLevel, allowNaturalSpawning);
         if (next.equals(previous)) {
             return false;
         }
@@ -112,6 +118,18 @@ public final class ChunkLoaderSavedData extends SavedData {
         if (!this.managedChunks.equals(managedChunks)) {
             this.managedChunks.clear();
             this.managedChunks.addAll(managedChunks);
+            this.setDirty();
+        }
+    }
+
+    public Set<Long> getSpawningChunks() {
+        return Collections.unmodifiableSet(this.spawningChunks);
+    }
+
+    public void setSpawningChunks(Set<Long> spawningChunks) {
+        if (!this.spawningChunks.equals(spawningChunks)) {
+            this.spawningChunks.clear();
+            this.spawningChunks.addAll(spawningChunks);
             this.setDirty();
         }
     }
