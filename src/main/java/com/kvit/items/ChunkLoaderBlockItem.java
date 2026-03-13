@@ -54,11 +54,11 @@ public final class ChunkLoaderBlockItem extends PolymerBlockItem {
     public ItemStack getPolymerItemStack(ItemStack itemStack, TooltipFlag tooltipType, PacketContext context) {
         if (canSyncRawToClient(context)) {
             return itemStack;
-        }
-        ItemStack result = super.getPolymerItemStack(itemStack, tooltipType, context);
-        result.set(DataComponents.ITEM_NAME, Component.literal("Chunk Loader"));
-        return result;
-    }
+		}
+		ItemStack result = super.getPolymerItemStack(itemStack, tooltipType, context);
+		result.set(DataComponents.ITEM_NAME, Component.literal(ModContent.CHUNK_LOADER_DISPLAY_NAME));
+		return result;
+	}
 
     @Override
     public boolean canSyncRawToClient(PacketContext context) {

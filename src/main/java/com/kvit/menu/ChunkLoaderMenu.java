@@ -169,7 +169,7 @@ public final class ChunkLoaderMenu extends ChestMenu {
 
 		int currentLevel = blockEntity.getExpansionLevel();
 		int maxLevel = SimpleChunkLoader.getConfig().maxExpansionLevel();
-		int areaSize = 1 + 2 * currentLevel;
+		int areaSize = ChunkLoaderManager.getAreaSizeInChunks(currentLevel);
 		Component areaLore = Component.literal("Area: " + areaSize + "x" + areaSize + " chunks")
 			.withStyle(ChatFormatting.GRAY);
 

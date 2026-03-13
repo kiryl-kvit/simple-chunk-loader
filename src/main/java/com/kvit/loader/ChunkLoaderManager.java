@@ -101,6 +101,10 @@ public final class ChunkLoaderManager {
         );
     }
 
+    public static int getAreaSizeInChunks(int expansionLevel) {
+        return 1 + 2 * expansionLevel;
+    }
+
     /**
      * Returns {@code true} if the given chunk belongs to an enabled loader that has
      * natural mob spawning enabled. Used by {@code ChunkMapMixin} to bypass the
@@ -166,14 +170,11 @@ public final class ChunkLoaderManager {
         Objects.requireNonNull(server, "server");
 
         List<LoaderReference> loaders = new ArrayList<>();
-        int maxId = 0;
+        int maxId = computeMaxId(server);
 
         for (ServerLevel level : server.getAllLevels()) {
             for (ChunkLoaderRecord record : getData(level).getLoaders()) {
                 loaders.add(new LoaderReference(level, record));
-                if (record.id() > 0) {
-                    maxId = Math.max(maxId, record.id());
-                }
             }
         }
 
@@ -212,6 +213,10 @@ public final class ChunkLoaderManager {
     }
 
     private static int allocateNextId(MinecraftServer server) {
+        return computeMaxId(server) + 1;
+    }
+
+    private static int computeMaxId(MinecraftServer server) {
         int maxId = 0;
         for (ServerLevel level : server.getAllLevels()) {
             for (ChunkLoaderRecord record : getData(level).getLoaders()) {
@@ -220,7 +225,7 @@ public final class ChunkLoaderManager {
                 }
             }
         }
-        return maxId + 1;
+        return maxId;
     }
 
     private static boolean updateLoader(ServerLevel level, BlockPos pos,

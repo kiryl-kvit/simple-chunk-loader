@@ -53,7 +53,7 @@ public final class ChunkLoaderRenameMenu extends AnvilMenu {
 			serverPlayer.sendSystemMessage(LoaderMessages.renameResult(nextName));
 			serverPlayer.openMenu(new net.minecraft.world.SimpleMenuProvider(
 				(syncId, inventory, openPlayer) -> new ChunkLoaderMenu(syncId, inventory, this.level, this.pos, openPlayer.getUUID()),
-				Component.literal("Chunk Loader")
+				Component.literal(ModContent.CHUNK_LOADER_DISPLAY_NAME)
 			));
 		}
 	}
@@ -90,7 +90,7 @@ public final class ChunkLoaderRenameMenu extends AnvilMenu {
 		this.pendingName = currentName;
 
 		ItemStack stack = new ItemStack(Items.NAME_TAG);
-		stack.set(DataComponents.ITEM_NAME, MenuComponents.plain(Component.literal("Chunk Loader")));
+		stack.set(DataComponents.ITEM_NAME, MenuComponents.plain(Component.literal(ModContent.CHUNK_LOADER_DISPLAY_NAME)));
 		if (!currentName.isBlank()) {
 			stack.set(DataComponents.CUSTOM_NAME, MenuComponents.plain(Component.literal(currentName)));
 		}

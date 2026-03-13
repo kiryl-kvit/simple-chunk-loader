@@ -85,24 +85,11 @@ public final class ChunkLoaderSavedData extends SavedData {
     }
 
     public void put(BlockPos pos, int id, boolean enabled, int expansionLevel, boolean allowNaturalSpawning, String name) {
-        long key = ChunkLoaderRecord.key(pos);
-        ChunkLoaderRecord next = new ChunkLoaderRecord(id, pos.getX(), pos.getY(), pos.getZ(), enabled, expansionLevel, allowNaturalSpawning, name);
-        ChunkLoaderRecord replaced = this.loaders.put(key, next);
-        if (!next.equals(replaced)) {
-            this.setDirty();
-        }
+        this.putIfChanged(pos, id, enabled, expansionLevel, allowNaturalSpawning, name);
     }
 
     public boolean putIfChanged(BlockPos pos, int id, boolean enabled, int expansionLevel, boolean allowNaturalSpawning, String name) {
-        long key = ChunkLoaderRecord.key(pos);
-        ChunkLoaderRecord previous = this.loaders.get(key);
-        ChunkLoaderRecord next = new ChunkLoaderRecord(id, pos.getX(), pos.getY(), pos.getZ(), enabled, expansionLevel, allowNaturalSpawning, name);
-        if (next.equals(previous)) {
-            return false;
-        }
-        this.loaders.put(key, next);
-        this.setDirty();
-        return true;
+        return this.putIfChanged(pos, recordAt(pos, id, enabled, expansionLevel, allowNaturalSpawning, name));
     }
 
     public void remove(BlockPos pos) {
@@ -130,11 +117,7 @@ public final class ChunkLoaderSavedData extends SavedData {
     }
 
     public void setManagedChunks(Set<Long> managedChunks) {
-        if (!this.managedChunks.equals(managedChunks)) {
-            this.managedChunks.clear();
-            this.managedChunks.addAll(managedChunks);
-            this.setDirty();
-        }
+        this.replaceSet(this.managedChunks, managedChunks);
     }
 
     public Set<Long> getSpawningChunks() {
@@ -142,10 +125,21 @@ public final class ChunkLoaderSavedData extends SavedData {
     }
 
     public void setSpawningChunks(Set<Long> spawningChunks) {
-        if (!this.spawningChunks.equals(spawningChunks)) {
-            this.spawningChunks.clear();
-            this.spawningChunks.addAll(spawningChunks);
-            this.setDirty();
+        this.replaceSet(this.spawningChunks, spawningChunks);
+    }
+
+    private void replaceSet(Set<Long> target, Set<Long> incoming) {
+        if (target.equals(incoming)) {
+            return;
         }
+
+        target.clear();
+        target.addAll(incoming);
+        this.setDirty();
+    }
+
+    private static ChunkLoaderRecord recordAt(BlockPos pos, int id, boolean enabled, int expansionLevel,
+                                              boolean allowNaturalSpawning, String name) {
+        return new ChunkLoaderRecord(id, pos.getX(), pos.getY(), pos.getZ(), enabled, expansionLevel, allowNaturalSpawning, name);
     }
 }

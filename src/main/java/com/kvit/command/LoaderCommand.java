@@ -5,6 +5,7 @@ import com.kvit.blocks.chunkLoader.entity.ChunkLoaderBlockEntity;
 import com.kvit.loader.ChunkLoaderManager;
 import com.kvit.loader.ChunkLoaderManager.LoaderReference;
 import com.kvit.loader.LoaderMessages;
+import com.kvit.menu.MenuComponents;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -28,7 +29,6 @@ import net.minecraft.world.phys.Vec3;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.UnaryOperator;
 
 public final class LoaderCommand {
 	private static final int PAGE_SIZE = 8;
@@ -148,13 +148,10 @@ public final class LoaderCommand {
 	}
 
 	private static int setLoaderEnabled(CommandSourceStack source, int id, boolean enabled) {
-		Optional<LoaderReference> optionalLoader = resolveLoader(source, id);
-		if (optionalLoader.isEmpty()) {
-			source.sendFailure(Component.literal("No chunk loader with id #" + id + " was found.").withStyle(ChatFormatting.RED));
+		LoaderReference loader = resolveLoaderOrNotify(source, id).orElse(null);
+		if (loader == null) {
 			return 0;
 		}
-
-		LoaderReference loader = optionalLoader.get();
 		if (loader.record().enabled() == enabled) {
 			source.sendSuccess(() -> Component.empty()
 				.append(Component.literal("Loader #" + id + " is already "))
@@ -165,20 +162,17 @@ public final class LoaderCommand {
 		ChunkLoaderManager.setEnabled(loader.level(), loader.blockPos(), enabled);
 
 		source.sendSuccess(() -> Component.empty()
-			.append(Component.literal(enabled ? "Enabled " : "Disabled ").withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GOLD))
+			.append(toggleActionComponent(enabled))
 			.append(Component.literal("loader #" + id + " ").withStyle(ChatFormatting.WHITE))
 			.append(locationComponent(loader)), false);
 		return 1;
 	}
 
 	private static int renameLoader(CommandSourceStack source, int id, String requestedName) {
-		Optional<LoaderReference> optionalLoader = resolveLoader(source, id);
-		if (optionalLoader.isEmpty()) {
-			source.sendFailure(Component.literal("No chunk loader with id #" + id + " was found.").withStyle(ChatFormatting.RED));
+		LoaderReference loader = resolveLoaderOrNotify(source, id).orElse(null);
+		if (loader == null) {
 			return 0;
 		}
-
-		LoaderReference loader = optionalLoader.get();
 		String name = ChunkLoaderManager.normalizeName(requestedName);
 
 		if (loader.record().name().equals(name)) {
@@ -196,27 +190,21 @@ public final class LoaderCommand {
 			return 0;
 		}
 
-		source.sendSuccess(() -> Component.empty()
-			.append(Component.literal(name.isEmpty() ? "Cleared name for loader #" + id : "Renamed loader #" + id + " to ")
-				.withStyle(ChatFormatting.GREEN))
-			.append(name.isEmpty() ? Component.empty() : LoaderMessages.namedComponent(name)), false);
+		source.sendSuccess(() -> LoaderMessages.renameResult(id, name), false);
 		return 1;
 	}
 
 	private static int toggleNaturalSpawning(CommandSourceStack source, int id) {
-		Optional<LoaderReference> optionalLoader = resolveLoader(source, id);
-		if (optionalLoader.isEmpty()) {
-			source.sendFailure(Component.literal("No chunk loader with id #" + id + " was found.").withStyle(ChatFormatting.RED));
+		LoaderReference loader = resolveLoaderOrNotify(source, id).orElse(null);
+		if (loader == null) {
 			return 0;
 		}
-
-		LoaderReference loader = optionalLoader.get();
 		boolean newValue = !loader.record().allowNaturalSpawning();
 
 		ChunkLoaderManager.setAllowNaturalSpawning(loader.level(), loader.blockPos(), newValue);
 
 		source.sendSuccess(() -> Component.empty()
-			.append(Component.literal(newValue ? "Enabled " : "Disabled ").withStyle(newValue ? ChatFormatting.GREEN : ChatFormatting.GOLD))
+			.append(toggleActionComponent(newValue))
 			.append(Component.literal("natural mob spawning for loader #" + id + " ").withStyle(ChatFormatting.WHITE))
 			.append(locationComponent(loader)), false);
 		return 1;
@@ -224,14 +212,12 @@ public final class LoaderCommand {
 
 	private static int teleportToLoader(CommandContext<CommandSourceStack> context, int id) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
 		CommandSourceStack source = context.getSource();
-		Optional<LoaderReference> optionalLoader = resolveLoader(source, id);
-		if (optionalLoader.isEmpty()) {
-			source.sendFailure(Component.literal("No chunk loader with id #" + id + " was found.").withStyle(ChatFormatting.RED));
+		LoaderReference loader = resolveLoaderOrNotify(source, id).orElse(null);
+		if (loader == null) {
 			return 0;
 		}
 
 		ServerPlayer player = source.getPlayerOrException();
-		LoaderReference loader = optionalLoader.get();
 		Optional<Vec3> target = findTeleportTarget(loader.level(), loader.blockPos());
 		if (target.isEmpty()) {
 			source.sendFailure(Component.literal("Could not find a safe spot next to loader #" + id + ".")
@@ -261,6 +247,16 @@ public final class LoaderCommand {
 		return 1;
 	}
 
+	private static Optional<LoaderReference> resolveLoaderOrNotify(CommandSourceStack source, int id) {
+		Optional<LoaderReference> loader = resolveLoader(source, id);
+		if (loader.isPresent()) {
+			return loader;
+		}
+
+		source.sendFailure(Component.literal("No chunk loader with id #" + id + " was found.").withStyle(ChatFormatting.RED));
+		return Optional.empty();
+	}
+
 	private static Optional<LoaderReference> resolveLoader(CommandSourceStack source, int id) {
 		Optional<LoaderReference> optionalLoader = ChunkLoaderManager.getLoader(source.getServer(), id);
 		if (optionalLoader.isEmpty()) {
@@ -277,7 +273,7 @@ public final class LoaderCommand {
 	}
 
 	private static MutableComponent formatLoaderLine(LoaderReference loader) {
-		int areaSize = 1 + 2 * loader.record().expansionLevel();
+		int areaSize = ChunkLoaderManager.getAreaSizeInChunks(loader.record().expansionLevel());
 		MutableComponent line = Component.empty()
 			.append(Component.literal("#" + loader.record().id()).withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD))
 			.append(formatOptionalName(loader))
@@ -317,6 +313,11 @@ public final class LoaderCommand {
 	private static MutableComponent statusComponent(boolean enabled) {
 		return Component.literal(enabled ? "ENABLED" : "DISABLED")
 			.withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GOLD, ChatFormatting.BOLD);
+	}
+
+	private static MutableComponent toggleActionComponent(boolean enabled) {
+		return Component.literal(enabled ? "Enabled " : "Disabled ")
+			.withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GOLD);
 	}
 
 	private static Optional<Vec3> findTeleportTarget(ServerLevel level, BlockPos loaderPos) {
@@ -360,10 +361,6 @@ public final class LoaderCommand {
 		if (!message.getSiblings().isEmpty() || message.getString().length() > 0) {
 			message.append(Component.literal("\n"));
 		}
-		message.append(line.copy().withStyle(unitalic()));
-	}
-
-	private static UnaryOperator<net.minecraft.network.chat.Style> unitalic() {
-		return style -> style.withItalic(false);
+		message.append(MenuComponents.plain(line));
 	}
 }
