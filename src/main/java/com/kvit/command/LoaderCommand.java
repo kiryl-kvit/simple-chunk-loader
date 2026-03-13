@@ -27,6 +27,7 @@ import net.minecraft.world.entity.vehicle.DismountHelper;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 
@@ -36,6 +37,17 @@ public final class LoaderCommand {
 		SharedSuggestionProvider.suggest(
 			ChunkLoaderManager.getAllLoaders(context.getSource().getServer()).stream()
 				.map(loader -> Integer.toString(loader.record().id())),
+			builder
+		);
+	private static final SuggestionProvider<CommandSourceStack> LOADER_TARGET_SUGGESTIONS = (context, builder) ->
+		SharedSuggestionProvider.suggest(
+			ChunkLoaderManager.getAllLoaders(context.getSource().getServer()).stream()
+				.flatMap(loader -> java.util.stream.Stream.of(
+					Integer.toString(loader.record().id()),
+					loader.record().name()
+				))
+				.filter(target -> !target.isBlank())
+				.distinct(),
 			builder
 		);
 
@@ -89,11 +101,11 @@ public final class LoaderCommand {
 				.then(
 					Commands.literal("tp")
 						.then(
-							Commands.argument("id", IntegerArgumentType.integer(1))
-								.suggests(LOADER_ID_SUGGESTIONS)
+							Commands.argument("target", StringArgumentType.greedyString())
+								.suggests(LOADER_TARGET_SUGGESTIONS)
 								.executes(context -> teleportToLoader(
 									context,
-									IntegerArgumentType.getInteger(context, "id")
+									StringArgumentType.getString(context, "target")
 								))
 						)
 				)
@@ -210,22 +222,24 @@ public final class LoaderCommand {
 		return 1;
 	}
 
-	private static int teleportToLoader(CommandContext<CommandSourceStack> context, int id) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+	private static int teleportToLoader(CommandContext<CommandSourceStack> context, String target) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
 		CommandSourceStack source = context.getSource();
-		LoaderReference loader = resolveLoaderOrNotify(source, id).orElse(null);
+		LoaderReference loader = resolveLoaderTargetOrNotify(source, target).orElse(null);
 		if (loader == null) {
 			return 0;
 		}
 
 		ServerPlayer player = source.getPlayerOrException();
-		Optional<Vec3> target = findTeleportTarget(loader.level(), loader.blockPos());
-		if (target.isEmpty()) {
-			source.sendFailure(Component.literal("Could not find a safe spot next to loader #" + id + ".")
-				.withStyle(ChatFormatting.RED));
+		Optional<Vec3> teleportTarget = findTeleportTarget(loader.level(), loader.blockPos());
+		if (teleportTarget.isEmpty()) {
+			source.sendFailure(Component.empty()
+				.append(Component.literal("Could not find a safe spot next to loader ").withStyle(ChatFormatting.RED))
+				.append(loaderLabelComponent(loader))
+				.append(Component.literal(".").withStyle(ChatFormatting.RED)));
 			return 0;
 		}
 
-		Vec3 position = target.get();
+		Vec3 position = teleportTarget.get();
 		boolean teleported = player.teleportTo(
 			loader.level(),
 			position.x,
@@ -237,14 +251,53 @@ public final class LoaderCommand {
 			true
 		);
 		if (!teleported) {
-			source.sendFailure(Component.literal("Teleport to loader #" + id + " failed.").withStyle(ChatFormatting.RED));
+			source.sendFailure(Component.empty()
+				.append(Component.literal("Teleport to loader ").withStyle(ChatFormatting.RED))
+				.append(loaderLabelComponent(loader))
+				.append(Component.literal(" failed.").withStyle(ChatFormatting.RED)));
 			return 0;
 		}
 
 		source.sendSuccess(() -> Component.empty()
-			.append(Component.literal("Teleported to loader #" + id + " ").withStyle(ChatFormatting.GREEN))
+			.append(Component.literal("Teleported to loader ").withStyle(ChatFormatting.GREEN))
+			.append(loaderLabelComponent(loader))
+			.append(Component.literal(" ").withStyle(ChatFormatting.GREEN))
 			.append(locationComponent(loader)), false);
 		return 1;
+	}
+
+	private static Optional<LoaderReference> resolveLoaderTargetOrNotify(CommandSourceStack source, String target) {
+		String normalized = ChunkLoaderManager.normalizeName(target);
+		if (normalized.isEmpty()) {
+			source.sendFailure(Component.literal("Loader target must not be blank.").withStyle(ChatFormatting.RED));
+			return Optional.empty();
+		}
+
+		List<LoaderReference> namedMatches = resolveNamedLoaders(source, normalized);
+		if (!namedMatches.isEmpty()) {
+			if (namedMatches.size() > 1) {
+				source.sendFailure(Component.empty()
+					.append(Component.literal("Multiple chunk loaders are named ").withStyle(ChatFormatting.RED))
+					.append(LoaderMessages.namedComponent(normalized))
+					.append(Component.literal(". Use /loader list to pick its id: ").withStyle(ChatFormatting.RED))
+					.append(namedMatchIdsComponent(namedMatches)));
+				return Optional.empty();
+			}
+			return Optional.of(namedMatches.get(0));
+		}
+
+		try {
+			int id = Integer.parseInt(normalized);
+			return resolveLoaderOrNotify(source, id);
+		} catch (NumberFormatException ignored) {
+			String lowered = normalized.toLowerCase(Locale.ROOT);
+			source.sendFailure(Component.empty()
+				.append(Component.literal("No chunk loader named ").withStyle(ChatFormatting.RED))
+				.append(LoaderMessages.namedComponent(normalized))
+				.append(Component.literal(" was found.").withStyle(ChatFormatting.RED))
+				.append(suggestSimilarNames(source, lowered)));
+			return Optional.empty();
+		}
 	}
 
 	private static Optional<LoaderReference> resolveLoaderOrNotify(CommandSourceStack source, int id) {
@@ -272,6 +325,12 @@ public final class LoaderCommand {
 		return Optional.of(loader);
 	}
 
+	private static List<LoaderReference> resolveNamedLoaders(CommandSourceStack source, String name) {
+		return ChunkLoaderManager.getLoadersByName(source.getServer(), name).stream()
+			.filter(loader -> resolveLoader(source, loader.record().id()).isPresent())
+			.toList();
+	}
+
 	private static MutableComponent formatLoaderLine(LoaderReference loader) {
 		int areaSize = ChunkLoaderManager.getAreaSizeInChunks(loader.record().expansionLevel());
 		MutableComponent line = Component.empty()
@@ -284,7 +343,7 @@ public final class LoaderCommand {
 			.append(Component.literal("  "))
 			.append(Component.literal(formatCoordinates(loader.blockPos())).withStyle(ChatFormatting.GRAY))
 			.append(Component.literal("  "))
-			.append(Component.literal(areaSize + "x" + areaSize + " chunks").withStyle(ChatFormatting.DARK_GRAY));
+			.append(Component.literal(areaSize + "x" + areaSize).withStyle(ChatFormatting.DARK_GRAY));
 		if (loader.record().allowNaturalSpawning()) {
 			line.append(Component.literal("  "))
 				.append(Component.literal("SPAWNING").withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.BOLD));
@@ -300,6 +359,50 @@ public final class LoaderCommand {
 		return Component.empty()
 			.append(Component.literal(" "))
 			.append(LoaderMessages.namedComponent(loader.record().name()));
+	}
+
+	private static Component loaderLabelComponent(LoaderReference loader) {
+		MutableComponent label = Component.literal("#" + loader.record().id()).withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD);
+		if (!loader.record().hasName()) {
+			return label;
+		}
+
+		return label
+			.append(Component.literal(" "))
+			.append(LoaderMessages.namedComponent(loader.record().name()));
+	}
+
+	private static Component namedMatchIdsComponent(List<LoaderReference> matches) {
+		MutableComponent component = Component.empty();
+		for (int index = 0; index < matches.size(); index++) {
+			if (index > 0) {
+				component.append(Component.literal(", ").withStyle(ChatFormatting.RED));
+			}
+			component.append(Component.literal("#" + matches.get(index).record().id()).withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD));
+		}
+		return component;
+	}
+
+	private static Component suggestSimilarNames(CommandSourceStack source, String loweredTarget) {
+		List<String> similarNames = ChunkLoaderManager.getAllLoaders(source.getServer()).stream()
+			.map(loader -> loader.record().name())
+			.filter(name -> !name.isBlank())
+			.distinct()
+			.filter(name -> name.toLowerCase(Locale.ROOT).contains(loweredTarget))
+			.limit(3)
+			.toList();
+		if (similarNames.isEmpty()) {
+			return Component.empty();
+		}
+
+		MutableComponent component = Component.literal(" Similar names: ").withStyle(ChatFormatting.GRAY);
+		for (int index = 0; index < similarNames.size(); index++) {
+			if (index > 0) {
+				component.append(Component.literal(", ").withStyle(ChatFormatting.GRAY));
+			}
+			component.append(LoaderMessages.namedComponent(similarNames.get(index)));
+		}
+		return component;
 	}
 
 	private static MutableComponent locationComponent(LoaderReference loader) {
