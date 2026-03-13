@@ -58,19 +58,24 @@ public final class ChunkLoaderSavedData extends SavedData {
         return this.loaders.size();
     }
 
-    public void put(BlockPos pos, boolean enabled, int expansionLevel) {
+    public Optional<ChunkLoaderRecord> get(BlockPos pos) {
         long key = ChunkLoaderRecord.key(pos);
-        ChunkLoaderRecord next = new ChunkLoaderRecord(pos.getX(), pos.getY(), pos.getZ(), enabled, expansionLevel);
-        ChunkLoaderRecord previous = this.loaders.put(key, next);
-        if (!next.equals(previous)) {
+        return Optional.ofNullable(this.loaders.get(key));
+    }
+
+    public void put(BlockPos pos, int id, boolean enabled, int expansionLevel) {
+        long key = ChunkLoaderRecord.key(pos);
+        ChunkLoaderRecord next = new ChunkLoaderRecord(id, pos.getX(), pos.getY(), pos.getZ(), enabled, expansionLevel);
+        ChunkLoaderRecord replaced = this.loaders.put(key, next);
+        if (!next.equals(replaced)) {
             this.setDirty();
         }
     }
 
-    public boolean putIfChanged(BlockPos pos, boolean enabled, int expansionLevel) {
+    public boolean putIfChanged(BlockPos pos, int id, boolean enabled, int expansionLevel) {
         long key = ChunkLoaderRecord.key(pos);
-        ChunkLoaderRecord next = new ChunkLoaderRecord(pos.getX(), pos.getY(), pos.getZ(), enabled, expansionLevel);
         ChunkLoaderRecord previous = this.loaders.get(key);
+        ChunkLoaderRecord next = new ChunkLoaderRecord(id, pos.getX(), pos.getY(), pos.getZ(), enabled, expansionLevel);
         if (next.equals(previous)) {
             return false;
         }
@@ -87,6 +92,20 @@ public final class ChunkLoaderSavedData extends SavedData {
 
     public Set<Long> getManagedChunks() {
         return Collections.unmodifiableSet(this.managedChunks);
+    }
+
+    public Optional<ChunkLoaderRecord> getById(int id) {
+        if (id <= 0) {
+            return Optional.empty();
+        }
+
+        for (ChunkLoaderRecord record : this.loaders.values()) {
+            if (record.id() == id) {
+                return Optional.of(record);
+            }
+        }
+
+        return Optional.empty();
     }
 
     public void setManagedChunks(Set<Long> managedChunks) {

@@ -4,7 +4,8 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
 
-public record ChunkLoaderRecord(int x, int y, int z, boolean enabled, int expansionLevel) {
+public record ChunkLoaderRecord(int id, int x, int y, int z, boolean enabled, int expansionLevel) {
+    private static final String FIELD_ID = "id";
     private static final String FIELD_X = "x";
     private static final String FIELD_Y = "y";
     private static final String FIELD_Z = "z";
@@ -12,6 +13,7 @@ public record ChunkLoaderRecord(int x, int y, int z, boolean enabled, int expans
     private static final String FIELD_EXPANSION_LEVEL = "expansionLevel";
 
     public static final Codec<ChunkLoaderRecord> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+            Codec.INT.optionalFieldOf(FIELD_ID, 0).forGetter(ChunkLoaderRecord::id),
             Codec.INT.fieldOf(FIELD_X).forGetter(ChunkLoaderRecord::x),
             Codec.INT.fieldOf(FIELD_Y).forGetter(ChunkLoaderRecord::y),
             Codec.INT.fieldOf(FIELD_Z).forGetter(ChunkLoaderRecord::z),

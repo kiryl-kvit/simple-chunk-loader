@@ -1,11 +1,13 @@
 package com.kvit;
 
 import com.kvit.blocks.chunkLoader.entity.ChunkLoaderBlockEntity;
+import com.kvit.command.LoaderCommand;
 import com.kvit.config.SimpleChunkLoaderConfig;
 import com.kvit.loader.ChunkLoaderManager;
 import com.kvit.network.VersionNetworking;
 import com.kvit.preview.ChunkLoaderPreviewManager;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerBlockEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
@@ -41,6 +43,7 @@ public final class SimpleChunkLoader implements ModInitializer {
 				ChunkLoaderManager.upsert(world, chunkLoader.getBlockPos(), chunkLoader.isEnabled(), chunkLoader.getExpansionLevel());
 			}
 		});
+		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> LoaderCommand.register(dispatcher));
 		ServerTickEvents.END_SERVER_TICK.register(ChunkLoaderPreviewManager::tick);
 		ServerLifecycleEvents.SERVER_STOPPING.register(server -> ChunkLoaderPreviewManager.clearAll());
 
