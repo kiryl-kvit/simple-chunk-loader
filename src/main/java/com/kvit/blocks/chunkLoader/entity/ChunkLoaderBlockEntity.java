@@ -13,9 +13,11 @@ import org.jspecify.annotations.NonNull;
 public final class ChunkLoaderBlockEntity extends BlockEntity {
     private static final String NBT_ENABLED = "Enabled";
     private static final String NBT_EXPANSION_LEVEL = "ExpansionLevel";
+    private static final String NBT_ALLOW_NATURAL_SPAWNING = "AllowNaturalSpawning";
 
     private boolean enabled = true;
     private int expansionLevel = 0;
+    private boolean allowNaturalSpawning = false;
 
     public ChunkLoaderBlockEntity(BlockPos pos, BlockState state) {
         super(ModContent.chunkLoaderBlockEntity(), pos, state);
@@ -33,7 +35,7 @@ public final class ChunkLoaderBlockEntity extends BlockEntity {
         this.enabled = enabled;
         this.setChanged();
         if (this.level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
-            ChunkLoaderManager.upsert(serverLevel, this.getBlockPos(), this.enabled, this.expansionLevel);
+            ChunkLoaderManager.upsert(serverLevel, this.getBlockPos(), this.enabled, this.expansionLevel, this.allowNaturalSpawning);
         }
     }
 
@@ -50,7 +52,23 @@ public final class ChunkLoaderBlockEntity extends BlockEntity {
         this.expansionLevel = clamped;
         this.setChanged();
         if (this.level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
-            ChunkLoaderManager.upsert(serverLevel, this.getBlockPos(), this.enabled, this.expansionLevel);
+            ChunkLoaderManager.upsert(serverLevel, this.getBlockPos(), this.enabled, this.expansionLevel, this.allowNaturalSpawning);
+        }
+    }
+
+    public boolean isAllowNaturalSpawning() {
+        return this.allowNaturalSpawning;
+    }
+
+    public void setAllowNaturalSpawning(boolean allowNaturalSpawning) {
+        if (this.allowNaturalSpawning == allowNaturalSpawning) {
+            return;
+        }
+
+        this.allowNaturalSpawning = allowNaturalSpawning;
+        this.setChanged();
+        if (this.level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+            ChunkLoaderManager.upsert(serverLevel, this.getBlockPos(), this.enabled, this.expansionLevel, this.allowNaturalSpawning);
         }
     }
 
@@ -59,6 +77,7 @@ public final class ChunkLoaderBlockEntity extends BlockEntity {
         super.loadAdditional(input);
         this.enabled = input.getBooleanOr(NBT_ENABLED, true);
         this.expansionLevel = input.getIntOr(NBT_EXPANSION_LEVEL, 0);
+        this.allowNaturalSpawning = input.getBooleanOr(NBT_ALLOW_NATURAL_SPAWNING, false);
     }
 
     @Override
@@ -66,6 +85,7 @@ public final class ChunkLoaderBlockEntity extends BlockEntity {
         super.saveAdditional(output);
         output.putBoolean(NBT_ENABLED, this.enabled);
         output.putInt(NBT_EXPANSION_LEVEL, this.expansionLevel);
+        output.putBoolean(NBT_ALLOW_NATURAL_SPAWNING, this.allowNaturalSpawning);
     }
 
     @Override

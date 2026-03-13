@@ -40,7 +40,7 @@ public final class SimpleChunkLoader implements ModInitializer {
 		ServerWorldEvents.LOAD.register((server, world) -> ChunkLoaderManager.handleWorldLoad(world));
 		ServerBlockEntityEvents.BLOCK_ENTITY_LOAD.register((blockEntity, world) -> {
 			if (blockEntity instanceof ChunkLoaderBlockEntity chunkLoader) {
-				ChunkLoaderManager.upsert(world, chunkLoader.getBlockPos(), chunkLoader.isEnabled(), chunkLoader.getExpansionLevel());
+				ChunkLoaderManager.upsert(world, chunkLoader.getBlockPos(), chunkLoader.isEnabled(), chunkLoader.getExpansionLevel(), chunkLoader.isAllowNaturalSpawning());
 			}
 		});
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> LoaderCommand.register(dispatcher));

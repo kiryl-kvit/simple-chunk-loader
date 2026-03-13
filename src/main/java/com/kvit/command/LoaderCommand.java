@@ -54,6 +54,17 @@ public final class LoaderCommand {
 				.then(toggleLiteral("enable", true))
 				.then(toggleLiteral("disable", false))
 				.then(
+					Commands.literal("spawning")
+						.then(
+							Commands.argument("id", IntegerArgumentType.integer(1))
+								.suggests(LOADER_ID_SUGGESTIONS)
+								.executes(context -> toggleNaturalSpawning(
+									context.getSource(),
+									IntegerArgumentType.getInteger(context, "id")
+								))
+						)
+				)
+				.then(
 					Commands.literal("tp")
 						.then(
 							Commands.argument("id", IntegerArgumentType.integer(1))
@@ -134,12 +145,37 @@ public final class LoaderCommand {
 		if (level.getBlockEntity(pos) instanceof ChunkLoaderBlockEntity blockEntity) {
 			blockEntity.setEnabled(enabled);
 		} else {
-			ChunkLoaderManager.upsert(level, pos, enabled, loader.record().expansionLevel());
+			ChunkLoaderManager.upsert(level, pos, enabled, loader.record().expansionLevel(), loader.record().allowNaturalSpawning());
 		}
 
 		source.sendSuccess(() -> Component.empty()
 			.append(Component.literal(enabled ? "Enabled " : "Disabled ").withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GOLD))
 			.append(Component.literal("loader #" + id + " ").withStyle(ChatFormatting.WHITE))
+			.append(locationComponent(loader)), false);
+		return 1;
+	}
+
+	private static int toggleNaturalSpawning(CommandSourceStack source, int id) {
+		Optional<LoaderReference> optionalLoader = resolveLoader(source, id);
+		if (optionalLoader.isEmpty()) {
+			source.sendFailure(Component.literal("No chunk loader with id #" + id + " was found.").withStyle(ChatFormatting.RED));
+			return 0;
+		}
+
+		LoaderReference loader = optionalLoader.get();
+		boolean newValue = !loader.record().allowNaturalSpawning();
+
+		BlockPos pos = loader.blockPos();
+		ServerLevel level = loader.level();
+		if (level.getBlockEntity(pos) instanceof ChunkLoaderBlockEntity blockEntity) {
+			blockEntity.setAllowNaturalSpawning(newValue);
+		} else {
+			ChunkLoaderManager.upsert(level, pos, loader.record().enabled(), loader.record().expansionLevel(), newValue);
+		}
+
+		source.sendSuccess(() -> Component.empty()
+			.append(Component.literal(newValue ? "Enabled " : "Disabled ").withStyle(newValue ? ChatFormatting.GREEN : ChatFormatting.GOLD))
+			.append(Component.literal("natural mob spawning for loader #" + id + " ").withStyle(ChatFormatting.WHITE))
 			.append(locationComponent(loader)), false);
 		return 1;
 	}
@@ -200,7 +236,7 @@ public final class LoaderCommand {
 
 	private static MutableComponent formatLoaderLine(LoaderReference loader) {
 		int areaSize = 1 + 2 * loader.record().expansionLevel();
-		return Component.empty()
+		MutableComponent line = Component.empty()
 			.append(Component.literal("#" + loader.record().id()).withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD))
 			.append(Component.literal("  "))
 			.append(statusComponent(loader.record().enabled()))
@@ -210,6 +246,11 @@ public final class LoaderCommand {
 			.append(Component.literal(formatCoordinates(loader.blockPos())).withStyle(ChatFormatting.GRAY))
 			.append(Component.literal("  "))
 			.append(Component.literal(areaSize + "x" + areaSize + " chunks").withStyle(ChatFormatting.DARK_GRAY));
+		if (loader.record().allowNaturalSpawning()) {
+			line.append(Component.literal("  "))
+				.append(Component.literal("SPAWNING").withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.BOLD));
+		}
+		return line;
 	}
 
 	private static MutableComponent locationComponent(LoaderReference loader) {

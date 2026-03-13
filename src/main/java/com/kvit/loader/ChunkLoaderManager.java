@@ -58,13 +58,13 @@ public final class ChunkLoaderManager {
         applyWorld(level, data);
     }
 
-    public static void upsert(ServerLevel level, BlockPos pos, boolean enabled, int expansionLevel) {
+    public static void upsert(ServerLevel level, BlockPos pos, boolean enabled, int expansionLevel, boolean allowNaturalSpawning) {
         ChunkLoaderSavedData data = getData(level);
         int id = data.get(pos)
                 .map(ChunkLoaderRecord::id)
                 .filter(existingId -> existingId > 0)
                 .orElseGet(() -> allocateNextId(level.getServer()));
-        if (data.putIfChanged(pos, id, enabled, expansionLevel)) {
+        if (data.putIfChanged(pos, id, enabled, expansionLevel, allowNaturalSpawning)) {
             applyWorld(level, data);
         }
     }
@@ -82,6 +82,15 @@ public final class ChunkLoaderManager {
                 chunkX - expansionLevel, chunkX + expansionLevel,
                 chunkZ - expansionLevel, chunkZ + expansionLevel
         );
+    }
+
+    /**
+     * Returns {@code true} if the given chunk belongs to an enabled loader that has
+     * natural mob spawning enabled. Used by {@code ChunkMapMixin} to bypass the
+     * player proximity check for natural spawning.
+     */
+    public static boolean isNaturalSpawningChunk(ServerLevel level, ChunkPos chunkPos) {
+        return getData(level).getSpawningChunks().contains(chunkPos.toLong());
     }
 
     public static List<LoaderReference> getAllLoaders(MinecraftServer server) {
@@ -153,7 +162,7 @@ public final class ChunkLoaderManager {
                 nextId++;
             }
 
-            getData(loader.level()).put(record.blockPos(), nextId, record.enabled(), record.expansionLevel());
+            getData(loader.level()).put(record.blockPos(), nextId, record.enabled(), record.expansionLevel(), record.allowNaturalSpawning());
             usedIds.add(nextId);
             nextId++;
         }
@@ -173,6 +182,7 @@ public final class ChunkLoaderManager {
 
     private static void applyWorld(ServerLevel level, ChunkLoaderSavedData data) {
         Set<Long> desired = new HashSet<>();
+        Set<Long> spawning = new HashSet<>();
         for (ChunkLoaderRecord record : data.getLoaders()) {
             if (!record.enabled()) {
                 continue;
@@ -181,7 +191,11 @@ public final class ChunkLoaderManager {
             ChunkBounds bounds = getChunkBounds(record.blockPos(), record.expansionLevel());
             for (int chunkX = bounds.minChunkX(); chunkX <= bounds.maxChunkX(); chunkX++) {
                 for (int chunkZ = bounds.minChunkZ(); chunkZ <= bounds.maxChunkZ(); chunkZ++) {
-                    desired.add(ChunkPos.asLong(chunkX, chunkZ));
+                    long packed = ChunkPos.asLong(chunkX, chunkZ);
+                    desired.add(packed);
+                    if (record.allowNaturalSpawning()) {
+                        spawning.add(packed);
+                    }
                 }
             }
         }
@@ -200,6 +214,7 @@ public final class ChunkLoaderManager {
         }
 
         data.setManagedChunks(desired);
+        data.setSpawningChunks(spawning);
     }
 
     private static ChunkLoaderSavedData getData(ServerLevel level) {
