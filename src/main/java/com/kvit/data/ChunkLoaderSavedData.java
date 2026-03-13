@@ -69,19 +69,34 @@ public final class ChunkLoaderSavedData extends SavedData {
         return Optional.ofNullable(this.loaders.get(key));
     }
 
-    public void put(BlockPos pos, int id, boolean enabled, int expansionLevel, boolean allowNaturalSpawning) {
+    public boolean putIfChanged(ChunkLoaderRecord record) {
+        return this.putIfChanged(record.blockPos(), record);
+    }
+
+    public boolean putIfChanged(BlockPos pos, ChunkLoaderRecord record) {
         long key = ChunkLoaderRecord.key(pos);
-        ChunkLoaderRecord next = new ChunkLoaderRecord(id, pos.getX(), pos.getY(), pos.getZ(), enabled, expansionLevel, allowNaturalSpawning);
+        ChunkLoaderRecord previous = this.loaders.get(key);
+        if (record.equals(previous)) {
+            return false;
+        }
+        this.loaders.put(key, record);
+        this.setDirty();
+        return true;
+    }
+
+    public void put(BlockPos pos, int id, boolean enabled, int expansionLevel, boolean allowNaturalSpawning, String name) {
+        long key = ChunkLoaderRecord.key(pos);
+        ChunkLoaderRecord next = new ChunkLoaderRecord(id, pos.getX(), pos.getY(), pos.getZ(), enabled, expansionLevel, allowNaturalSpawning, name);
         ChunkLoaderRecord replaced = this.loaders.put(key, next);
         if (!next.equals(replaced)) {
             this.setDirty();
         }
     }
 
-    public boolean putIfChanged(BlockPos pos, int id, boolean enabled, int expansionLevel, boolean allowNaturalSpawning) {
+    public boolean putIfChanged(BlockPos pos, int id, boolean enabled, int expansionLevel, boolean allowNaturalSpawning, String name) {
         long key = ChunkLoaderRecord.key(pos);
         ChunkLoaderRecord previous = this.loaders.get(key);
-        ChunkLoaderRecord next = new ChunkLoaderRecord(id, pos.getX(), pos.getY(), pos.getZ(), enabled, expansionLevel, allowNaturalSpawning);
+        ChunkLoaderRecord next = new ChunkLoaderRecord(id, pos.getX(), pos.getY(), pos.getZ(), enabled, expansionLevel, allowNaturalSpawning, name);
         if (next.equals(previous)) {
             return false;
         }

@@ -4,8 +4,10 @@ import com.kvit.ModContent;
 import com.kvit.blocks.chunkLoader.entity.ChunkLoaderBlockEntity;
 import com.kvit.loader.ChunkLoaderManager;
 import com.kvit.loader.ChunkLoaderManager.LoaderReference;
+import com.kvit.loader.LoaderMessages;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import net.minecraft.ChatFormatting;
@@ -53,6 +55,26 @@ public final class LoaderCommand {
 				)
 				.then(toggleLiteral("enable", true))
 				.then(toggleLiteral("disable", false))
+				.then(
+					Commands.literal("rename")
+						.then(
+							Commands.argument("id", IntegerArgumentType.integer(1))
+								.suggests(LOADER_ID_SUGGESTIONS)
+								.executes(context -> renameLoader(
+									context.getSource(),
+									IntegerArgumentType.getInteger(context, "id"),
+									""
+								))
+								.then(
+									Commands.argument("name", StringArgumentType.greedyString())
+										.executes(context -> renameLoader(
+											context.getSource(),
+											IntegerArgumentType.getInteger(context, "id"),
+											StringArgumentType.getString(context, "name")
+										))
+								)
+						)
+				)
 				.then(
 					Commands.literal("spawning")
 						.then(
@@ -140,18 +162,44 @@ public final class LoaderCommand {
 			return 1;
 		}
 
-		BlockPos pos = loader.blockPos();
-		ServerLevel level = loader.level();
-		if (level.getBlockEntity(pos) instanceof ChunkLoaderBlockEntity blockEntity) {
-			blockEntity.setEnabled(enabled);
-		} else {
-			ChunkLoaderManager.upsert(level, pos, enabled, loader.record().expansionLevel(), loader.record().allowNaturalSpawning());
-		}
+		ChunkLoaderManager.setEnabled(loader.level(), loader.blockPos(), enabled);
 
 		source.sendSuccess(() -> Component.empty()
 			.append(Component.literal(enabled ? "Enabled " : "Disabled ").withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GOLD))
 			.append(Component.literal("loader #" + id + " ").withStyle(ChatFormatting.WHITE))
 			.append(locationComponent(loader)), false);
+		return 1;
+	}
+
+	private static int renameLoader(CommandSourceStack source, int id, String requestedName) {
+		Optional<LoaderReference> optionalLoader = resolveLoader(source, id);
+		if (optionalLoader.isEmpty()) {
+			source.sendFailure(Component.literal("No chunk loader with id #" + id + " was found.").withStyle(ChatFormatting.RED));
+			return 0;
+		}
+
+		LoaderReference loader = optionalLoader.get();
+		String name = ChunkLoaderManager.normalizeName(requestedName);
+
+		if (loader.record().name().equals(name)) {
+			source.sendSuccess(() -> Component.empty()
+				.append(Component.literal(name.isEmpty()
+					? "Loader #" + id + " already has no custom name."
+					: "Loader #" + id + " is already named ").withStyle(ChatFormatting.YELLOW))
+				.append(name.isEmpty() ? Component.empty() : LoaderMessages.namedComponent(name)), false);
+			return 1;
+		}
+
+		boolean changed = ChunkLoaderManager.rename(loader.level(), loader.blockPos(), name);
+		if (!changed) {
+			source.sendFailure(Component.literal("Failed to rename loader #" + id + ".").withStyle(ChatFormatting.RED));
+			return 0;
+		}
+
+		source.sendSuccess(() -> Component.empty()
+			.append(Component.literal(name.isEmpty() ? "Cleared name for loader #" + id : "Renamed loader #" + id + " to ")
+				.withStyle(ChatFormatting.GREEN))
+			.append(name.isEmpty() ? Component.empty() : LoaderMessages.namedComponent(name)), false);
 		return 1;
 	}
 
@@ -165,13 +213,7 @@ public final class LoaderCommand {
 		LoaderReference loader = optionalLoader.get();
 		boolean newValue = !loader.record().allowNaturalSpawning();
 
-		BlockPos pos = loader.blockPos();
-		ServerLevel level = loader.level();
-		if (level.getBlockEntity(pos) instanceof ChunkLoaderBlockEntity blockEntity) {
-			blockEntity.setAllowNaturalSpawning(newValue);
-		} else {
-			ChunkLoaderManager.upsert(level, pos, loader.record().enabled(), loader.record().expansionLevel(), newValue);
-		}
+		ChunkLoaderManager.setAllowNaturalSpawning(loader.level(), loader.blockPos(), newValue);
 
 		source.sendSuccess(() -> Component.empty()
 			.append(Component.literal(newValue ? "Enabled " : "Disabled ").withStyle(newValue ? ChatFormatting.GREEN : ChatFormatting.GOLD))
@@ -238,6 +280,7 @@ public final class LoaderCommand {
 		int areaSize = 1 + 2 * loader.record().expansionLevel();
 		MutableComponent line = Component.empty()
 			.append(Component.literal("#" + loader.record().id()).withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD))
+			.append(formatOptionalName(loader))
 			.append(Component.literal("  "))
 			.append(statusComponent(loader.record().enabled()))
 			.append(Component.literal("  "))
@@ -251,6 +294,16 @@ public final class LoaderCommand {
 				.append(Component.literal("SPAWNING").withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.BOLD));
 		}
 		return line;
+	}
+
+	private static Component formatOptionalName(LoaderReference loader) {
+		if (!loader.record().hasName()) {
+			return Component.empty();
+		}
+
+		return Component.empty()
+			.append(Component.literal(" "))
+			.append(LoaderMessages.namedComponent(loader.record().name()));
 	}
 
 	private static MutableComponent locationComponent(LoaderReference loader) {

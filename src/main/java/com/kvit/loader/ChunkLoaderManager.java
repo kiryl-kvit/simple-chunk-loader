@@ -2,6 +2,7 @@ package com.kvit.loader;
 
 import com.kvit.ModContent;
 import com.kvit.SimpleChunkLoader;
+import com.kvit.blocks.chunkLoader.entity.ChunkLoaderBlockEntity;
 import com.kvit.data.ChunkLoaderRecord;
 import com.kvit.data.ChunkLoaderSavedData;
 import net.minecraft.core.BlockPos;
@@ -17,9 +18,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.UnaryOperator;
 
 public final class ChunkLoaderManager {
     static final int CHUNK_SIZE = 16;
+    public static final int MAX_NAME_LENGTH = 50;
 
     private ChunkLoaderManager() {
     }
@@ -60,13 +63,27 @@ public final class ChunkLoaderManager {
 
     public static void upsert(ServerLevel level, BlockPos pos, boolean enabled, int expansionLevel, boolean allowNaturalSpawning) {
         ChunkLoaderSavedData data = getData(level);
-        int id = data.get(pos)
+        ChunkLoaderRecord existing = data.get(pos).orElse(null);
+        int id = Optional.ofNullable(existing)
                 .map(ChunkLoaderRecord::id)
                 .filter(existingId -> existingId > 0)
                 .orElseGet(() -> allocateNextId(level.getServer()));
-        if (data.putIfChanged(pos, id, enabled, expansionLevel, allowNaturalSpawning)) {
+        String name = existing != null ? existing.name() : "";
+        if (data.putIfChanged(pos, id, enabled, expansionLevel, allowNaturalSpawning, name)) {
             applyWorld(level, data);
         }
+    }
+
+    public static boolean setEnabled(ServerLevel level, BlockPos pos, boolean enabled) {
+        return updateLoader(level, pos, record -> record.withEnabled(enabled), UpdateTarget.ENABLED);
+    }
+
+    public static boolean setAllowNaturalSpawning(ServerLevel level, BlockPos pos, boolean allowNaturalSpawning) {
+        return updateLoader(level, pos, record -> record.withAllowNaturalSpawning(allowNaturalSpawning), UpdateTarget.NATURAL_SPAWNING);
+    }
+
+    public static boolean rename(ServerLevel level, BlockPos pos, String name) {
+        return updateLoader(level, pos, record -> record.withName(normalizeName(name)), UpdateTarget.NAME);
     }
 
     public static void remove(ServerLevel level, BlockPos pos) {
@@ -127,6 +144,24 @@ public final class ChunkLoaderManager {
         return Optional.empty();
     }
 
+    public static Optional<ChunkLoaderRecord> getLoader(ServerLevel level, BlockPos pos) {
+        return getData(level).get(pos);
+    }
+
+    public static void syncLoadedBlockEntity(ServerLevel level, ChunkLoaderBlockEntity blockEntity) {
+        ChunkLoaderSavedData data = getData(level);
+        BlockPos pos = blockEntity.getBlockPos();
+        Optional<ChunkLoaderRecord> existing = data.get(pos);
+        if (existing.isPresent()) {
+            ChunkLoaderRecord record = existing.get();
+            blockEntity.setEnabledSilently(record.enabled());
+            blockEntity.setAllowNaturalSpawningSilently(record.allowNaturalSpawning());
+            return;
+        }
+
+        upsert(level, pos, blockEntity.isEnabled(), blockEntity.getExpansionLevel(), blockEntity.isAllowNaturalSpawning());
+    }
+
     public static void ensureStableIds(MinecraftServer server) {
         Objects.requireNonNull(server, "server");
 
@@ -162,10 +197,18 @@ public final class ChunkLoaderManager {
                 nextId++;
             }
 
-            getData(loader.level()).put(record.blockPos(), nextId, record.enabled(), record.expansionLevel(), record.allowNaturalSpawning());
+            getData(loader.level()).putIfChanged(record.withId(nextId));
             usedIds.add(nextId);
             nextId++;
         }
+    }
+
+    public static String normalizeName(String name) {
+        String normalized = name == null ? "" : name.trim();
+        if (normalized.length() > MAX_NAME_LENGTH) {
+            return normalized.substring(0, MAX_NAME_LENGTH);
+        }
+        return normalized;
     }
 
     private static int allocateNextId(MinecraftServer server) {
@@ -178,6 +221,53 @@ public final class ChunkLoaderManager {
             }
         }
         return maxId + 1;
+    }
+
+    private static boolean updateLoader(ServerLevel level, BlockPos pos,
+                                        UnaryOperator<ChunkLoaderRecord> updater,
+                                        UpdateTarget target) {
+        ChunkLoaderSavedData data = getData(level);
+        ChunkLoaderRecord existing = data.get(pos).orElse(null);
+        if (existing == null) {
+            return false;
+        }
+
+        ChunkLoaderRecord updated = updater.apply(existing);
+        boolean changed = data.putIfChanged(pos, updated);
+        syncLoadedBlockEntity(level, pos, updated, target);
+        if (changed && target.affectsForcedChunks()) {
+            applyWorld(level, data);
+        }
+        return changed;
+    }
+
+    private static void syncLoadedBlockEntity(ServerLevel level, BlockPos pos, ChunkLoaderRecord record, UpdateTarget target) {
+        if (!(level.getBlockEntity(pos) instanceof ChunkLoaderBlockEntity blockEntity)) {
+            return;
+        }
+
+        switch (target) {
+            case ENABLED -> blockEntity.setEnabledSilently(record.enabled());
+            case NATURAL_SPAWNING -> blockEntity.setAllowNaturalSpawningSilently(record.allowNaturalSpawning());
+            case NAME -> {
+            }
+        }
+    }
+
+    private enum UpdateTarget {
+        ENABLED(true),
+        NATURAL_SPAWNING(true),
+        NAME(false);
+
+        private final boolean affectsForcedChunks;
+
+        UpdateTarget(boolean affectsForcedChunks) {
+            this.affectsForcedChunks = affectsForcedChunks;
+        }
+
+        boolean affectsForcedChunks() {
+            return this.affectsForcedChunks;
+        }
     }
 
     private static void applyWorld(ServerLevel level, ChunkLoaderSavedData data) {

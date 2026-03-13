@@ -3,6 +3,7 @@ package com.kvit.menu;
 import com.kvit.ModContent;
 import com.kvit.SimpleChunkLoader;
 import com.kvit.blocks.chunkLoader.entity.ChunkLoaderBlockEntity;
+import com.kvit.loader.ChunkLoaderManager;
 import com.kvit.preview.ChunkLoaderPreviewManager;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -31,7 +32,8 @@ import java.util.UUID;
 public final class ChunkLoaderMenu extends ChestMenu {
 	private static final int MENU_SIZE = 27;
 	// Slot layout in 3x9 grid:
-	// row 2 col 3 (enable), row 2 col 5 (preview), row 2 col 7 (shrink), row 2 col 8 (expand)
+	// row 2 col 2 (rename), row 2 col 3 (enable), row 2 col 5 (preview), row 2 col 7 (shrink), row 2 col 8 (expand)
+	private static final int RENAME_SLOT = 10;
 	private static final int ENABLE_SLOT = 11;
 	private static final int PREVIEW_SLOT = 13;
 	private static final int SHRINK_SLOT = 15;
@@ -41,7 +43,7 @@ public final class ChunkLoaderMenu extends ChestMenu {
 
 	static {
 		FILLER_TEMPLATE = new ItemStack(Items.GRAY_STAINED_GLASS_PANE);
-		FILLER_TEMPLATE.set(DataComponents.ITEM_NAME, plain(Component.literal(" ")));
+		FILLER_TEMPLATE.set(DataComponents.ITEM_NAME, MenuComponents.plain(Component.literal(" ")));
 	}
 
 	private final SimpleContainer container;
@@ -91,13 +93,19 @@ public final class ChunkLoaderMenu extends ChestMenu {
 			return;
 		}
 
-		switch (slotId) {
+			switch (slotId) {
+			case RENAME_SLOT -> {
+				if (player instanceof ServerPlayer serverPlayer) {
+					this.openRenameMenu(serverPlayer);
+				}
+				return;
+			}
 			case PREVIEW_SLOT -> {
 				if (player instanceof ServerPlayer serverPlayer) {
 					ChunkLoaderPreviewManager.toggle(serverPlayer, blockEntity);
 				}
 			}
-			case ENABLE_SLOT -> blockEntity.setEnabled(!blockEntity.isEnabled());
+			case ENABLE_SLOT -> ChunkLoaderManager.setEnabled(this.level, this.pos, !blockEntity.isEnabled());
 			case EXPAND_SLOT -> {
 				int maxLevel = SimpleChunkLoader.getConfig().maxExpansionLevel();
 				if (blockEntity.getExpansionLevel() < maxLevel) {
@@ -109,7 +117,7 @@ public final class ChunkLoaderMenu extends ChestMenu {
 					blockEntity.setExpansionLevel(blockEntity.getExpansionLevel() - 1);
 				}
 			}
-			case SPAWNING_SLOT -> blockEntity.setAllowNaturalSpawning(!blockEntity.isAllowNaturalSpawning());
+			case SPAWNING_SLOT -> ChunkLoaderManager.setAllowNaturalSpawning(this.level, this.pos, !blockEntity.isAllowNaturalSpawning());
 			default -> {
 				return;
 			}
@@ -133,6 +141,16 @@ public final class ChunkLoaderMenu extends ChestMenu {
 
 		boolean enabled = blockEntity.isEnabled();
 		boolean previewing = ChunkLoaderPreviewManager.isPreviewing(this.playerId, this.level, this.pos);
+		String loaderName = ChunkLoaderManager.getLoader(this.level, this.pos)
+			.map(loader -> loader.name())
+			.filter(name -> !name.isBlank())
+			.orElse("none");
+
+		this.container.setItem(RENAME_SLOT, actionItem(
+			Items.NAME_TAG,
+			Component.literal("Rename Loader").withStyle(ChatFormatting.AQUA),
+			Component.literal("Current name: " + loaderName).withStyle(ChatFormatting.GRAY)
+		));
 
 		this.container.setItem(ENABLE_SLOT, actionItem(
 			enabled ? Items.LEVER : Items.REDSTONE_TORCH,
@@ -185,26 +203,29 @@ public final class ChunkLoaderMenu extends ChestMenu {
 		return this.level.getBlockEntity(this.pos) instanceof ChunkLoaderBlockEntity blockEntity ? blockEntity : null;
 	}
 
+	private void openRenameMenu(ServerPlayer player) {
+		player.openMenu(new net.minecraft.world.SimpleMenuProvider(
+			(syncId, inventory, openPlayer) -> new ChunkLoaderRenameMenu(syncId, inventory, this.level, this.pos),
+			Component.literal("Rename Loader")
+		));
+	}
+
 	private static ItemStack filler() {
 		return FILLER_TEMPLATE.copy();
 	}
 
 	private static ItemStack actionItem(Item item, Component name, Component... loreLines) {
 		ItemStack stack = new ItemStack(item);
-		stack.set(DataComponents.ITEM_NAME, plain(name));
+		stack.set(DataComponents.ITEM_NAME, MenuComponents.plain(name));
 
 		if (loreLines.length > 0) {
 			List<Component> lines = new ArrayList<>(loreLines.length);
 			for (Component line : loreLines) {
-				lines.add(plain(line));
+				lines.add(MenuComponents.plain(line));
 			}
 			stack.set(DataComponents.LORE, new ItemLore(lines));
 		}
 
 		return stack;
-	}
-
-	private static Component plain(Component component) {
-		return component.copy().withStyle(style -> style.withItalic(false));
 	}
 }
