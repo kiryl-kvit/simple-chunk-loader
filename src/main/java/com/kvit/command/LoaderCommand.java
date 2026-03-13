@@ -284,7 +284,7 @@ public final class LoaderCommand {
 			.append(Component.literal("  "))
 			.append(Component.literal(formatCoordinates(loader.blockPos())).withStyle(ChatFormatting.GRAY))
 			.append(Component.literal("  "))
-			.append(Component.literal(areaSize + "x" + areaSize + " chunks").withStyle(ChatFormatting.DARK_GRAY));
+			.append(Component.literal(areaSize + "x" + areaSize).withStyle(ChatFormatting.DARK_GRAY));
 		if (loader.record().allowNaturalSpawning()) {
 			line.append(Component.literal("  "))
 				.append(Component.literal("SPAWNING").withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.BOLD));
