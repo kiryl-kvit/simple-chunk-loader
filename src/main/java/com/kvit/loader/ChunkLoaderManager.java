@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -146,6 +147,19 @@ public final class ChunkLoaderManager {
         }
 
         return Optional.empty();
+    }
+
+    public static List<LoaderReference> getLoadersByName(MinecraftServer server, String name) {
+        String normalized = normalizeName(name);
+        if (normalized.isEmpty()) {
+            return List.of();
+        }
+
+        String lowered = normalized.toLowerCase(Locale.ROOT);
+        return getAllLoaders(server).stream()
+                .filter(loader -> loader.record().hasName())
+                .filter(loader -> loader.record().name().toLowerCase(Locale.ROOT).equals(lowered))
+                .toList();
     }
 
     public static Optional<ChunkLoaderRecord> getLoader(ServerLevel level, BlockPos pos) {
