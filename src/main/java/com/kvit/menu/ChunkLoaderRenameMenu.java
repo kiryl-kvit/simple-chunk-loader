@@ -3,6 +3,7 @@ package com.kvit.menu;
 import com.kvit.ModContent;
 import com.kvit.loader.ChunkLoaderManager;
 import com.kvit.loader.LoaderMessages;
+import com.kvit.mixin.AnvilMenuAccessor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
@@ -69,6 +70,7 @@ public final class ChunkLoaderRenameMenu extends AnvilMenu {
 		ItemStack base = this.inputSlots.getItem(0);
 		if (base.isEmpty()) {
 			this.resultSlots.setItem(0, ItemStack.EMPTY);
+			this.clearRenameCost();
 			this.broadcastChanges();
 			return;
 		}
@@ -80,7 +82,12 @@ public final class ChunkLoaderRenameMenu extends AnvilMenu {
 			result.set(DataComponents.CUSTOM_NAME, MenuComponents.plain(Component.literal(this.pendingName)));
 		}
 		this.resultSlots.setItem(0, result);
+		this.clearRenameCost();
 		this.broadcastChanges();
+	}
+
+	private void clearRenameCost() {
+		((AnvilMenuAccessor) (Object) this).simpleChunkLoader$getCostSlot().set(0);
 	}
 
 	private void initializeInput() {
