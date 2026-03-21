@@ -4,6 +4,8 @@
 
 ![Simple Chunk Loader block](.github/static/recipe.png)
 
+Recipe JSON: [`src/main/resources/data/simple-chunk-loader/recipe/chunk_loader.json`](src/main/resources/data/simple-chunk-loader/recipe/chunk_loader.json)
+
 This mod was developed only for a small server to play with friends. It is not intended or tested for large public servers.
 
 ## Compatibility
