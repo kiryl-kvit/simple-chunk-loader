@@ -6,8 +6,8 @@ import com.kvit.items.ChunkLoaderBlockItem;
 import eu.pb4.polymer.core.api.block.PolymerBlockUtils;
 import eu.pb4.polymer.core.api.item.PolymerItemGroupUtils;
 import eu.pb4.polymer.core.api.utils.PolymerSyncedObject;
-import eu.pb4.polymer.networking.api.server.PolymerServerNetworking;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -34,25 +34,22 @@ public final class ModContent {
 	private static Item chunkLoaderItem;
 	private static BlockEntityType<ChunkLoaderBlockEntity> chunkLoaderBlockEntity;
 
-	private static final Identifier POLYMER_SYNC_ITEMS = Identifier.fromNamespaceAndPath("polymer", "sync/items");
+	private static final Identifier MOD_PRESENCE_CHANNEL = SimpleChunkLoader.id("client_version");
 
 	private ModContent() {
 	}
 
 	/**
-	 * Returns true if the player connected via this PacketContext has the mod installed
-	 * (detected via Polymer networking handshake). Returns false for vanilla clients
-	 * and for null-player contexts (registry sync phase).
+	 * Returns true if the player connected via this PacketContext has simple-chunk-loader
+	 * installed. Returns false for vanilla clients, clients with only unrelated Polymer
+	 * mods, and for null-player contexts (registry sync phase).
 	 */
 	public static boolean isModdedClient(PacketContext context) {
 		var player = context.getPlayer();
 		if (!(player instanceof ServerPlayer serverPlayer)) {
 			return false;
 		}
-		return PolymerServerNetworking.getSupportedVersion(
-				serverPlayer.connection,
-				POLYMER_SYNC_ITEMS
-		) >= 0;
+		return ServerPlayNetworking.getReceived(serverPlayer).contains(MOD_PRESENCE_CHANNEL);
 	}
 
 	public static Block chunkLoader() {
