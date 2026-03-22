@@ -3,11 +3,12 @@ package com.kvit;
 import com.kvit.blocks.chunkLoader.ChunkLoaderBlock;
 import com.kvit.blocks.chunkLoader.entity.ChunkLoaderBlockEntity;
 import com.kvit.items.ChunkLoaderBlockItem;
+import com.kvit.network.ChunkLoaderPresencePayload;
 import eu.pb4.polymer.core.api.block.PolymerBlockUtils;
 import eu.pb4.polymer.core.api.item.PolymerItemGroupUtils;
 import eu.pb4.polymer.core.api.utils.PolymerSyncedObject;
+import eu.pb4.polymer.networking.api.server.PolymerServerNetworking;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -34,7 +35,7 @@ public final class ModContent {
 	private static Item chunkLoaderItem;
 	private static BlockEntityType<ChunkLoaderBlockEntity> chunkLoaderBlockEntity;
 
-	private static final Identifier MOD_PRESENCE_CHANNEL = SimpleChunkLoader.id("client_version");
+	private static final Identifier MOD_PRESENCE_CHANNEL = ChunkLoaderPresencePayload.CHANNEL_ID;
 
 	private ModContent() {
 	}
@@ -49,7 +50,8 @@ public final class ModContent {
 		if (!(player instanceof ServerPlayer serverPlayer)) {
 			return false;
 		}
-		return ServerPlayNetworking.getReceived(serverPlayer).contains(MOD_PRESENCE_CHANNEL);
+		return PolymerServerNetworking.getSupportedVersion(serverPlayer.connection, MOD_PRESENCE_CHANNEL)
+			>= ChunkLoaderPresencePayload.PROTOCOL_VERSION;
 	}
 
 	public static Block chunkLoader() {

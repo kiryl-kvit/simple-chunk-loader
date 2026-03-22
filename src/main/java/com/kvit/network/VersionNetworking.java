@@ -1,6 +1,7 @@
 package com.kvit.network;
 
 import com.kvit.SimpleChunkLoader;
+import eu.pb4.polymer.networking.api.PolymerNetworking;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.network.chat.Component;
@@ -10,6 +11,11 @@ public final class VersionNetworking {
 	}
 
 	public static void register() {
+		PolymerNetworking.registerCommonVersioned(
+			ChunkLoaderPresencePayload.TYPE,
+			ChunkLoaderPresencePayload.PROTOCOL_VERSION,
+			ChunkLoaderPresencePayload.CODEC
+		);
 		PayloadTypeRegistry.playC2S().register(ClientVersionPayload.TYPE, ClientVersionPayload.CODEC);
 		ServerPlayNetworking.registerGlobalReceiver(ClientVersionPayload.TYPE, (payload, context) -> {
 			String serverVersion = SimpleChunkLoader.getModVersion();
