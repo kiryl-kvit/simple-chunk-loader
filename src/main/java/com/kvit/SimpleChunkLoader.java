@@ -40,12 +40,16 @@ public final class SimpleChunkLoader implements ModInitializer {
 		ServerWorldEvents.LOAD.register((server, world) -> ChunkLoaderManager.handleWorldLoad(world));
 		ServerBlockEntityEvents.BLOCK_ENTITY_LOAD.register((blockEntity, world) -> {
 			if (blockEntity instanceof ChunkLoaderBlockEntity chunkLoader) {
-				ChunkLoaderManager.syncLoadedBlockEntity(world, chunkLoader);
+				ChunkLoaderManager.queueLoadedBlockEntity(world, chunkLoader);
 			}
 		});
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> LoaderCommand.register(dispatcher));
+		ServerTickEvents.END_WORLD_TICK.register(ChunkLoaderManager::tickWorld);
 		ServerTickEvents.END_SERVER_TICK.register(ChunkLoaderPreviewManager::tick);
-		ServerLifecycleEvents.SERVER_STOPPING.register(server -> ChunkLoaderPreviewManager.clearAll());
+		ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
+			ChunkLoaderPreviewManager.clearAll();
+			ChunkLoaderManager.clearPendingLoadedBlockEntities();
+		});
 
 		LOGGER.info("{} initialized with max_loaders={}", MOD_ID, config.maxLoaders());
 	}

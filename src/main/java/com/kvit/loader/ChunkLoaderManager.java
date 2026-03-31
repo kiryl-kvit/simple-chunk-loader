@@ -13,9 +13,11 @@ import net.minecraft.world.level.ChunkPos;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -24,8 +26,13 @@ import java.util.function.UnaryOperator;
 public final class ChunkLoaderManager {
     static final int CHUNK_SIZE = 16;
     public static final int MAX_NAME_LENGTH = 50;
+    private static final Map<ServerLevel, Set<BlockPos>> pendingLoadedBlockEntities = new HashMap<>();
 
     private ChunkLoaderManager() {
+    }
+
+    public static void tickWorld(ServerLevel level) {
+        flushLoadedBlockEntities(level);
     }
 
     public static boolean canPlaceAnother(MinecraftServer server) {
@@ -166,6 +173,16 @@ public final class ChunkLoaderManager {
         return getData(level).get(pos);
     }
 
+    public static void queueLoadedBlockEntity(ServerLevel level, ChunkLoaderBlockEntity blockEntity) {
+        pendingLoadedBlockEntities
+                .computeIfAbsent(level, unused -> new HashSet<>())
+                .add(blockEntity.getBlockPos().immutable());
+    }
+
+    public static void clearPendingLoadedBlockEntities() {
+        pendingLoadedBlockEntities.clear();
+    }
+
     public static void syncLoadedBlockEntity(ServerLevel level, ChunkLoaderBlockEntity blockEntity) {
         ChunkLoaderSavedData data = getData(level);
         BlockPos pos = blockEntity.getBlockPos();
@@ -264,6 +281,33 @@ public final class ChunkLoaderManager {
             case NATURAL_SPAWNING -> blockEntity.setAllowNaturalSpawningSilently(record.allowNaturalSpawning());
             case NAME -> {
             }
+        }
+    }
+
+    // Defer BE reconciliation until the chunk has finished loading to avoid load-phase re-entry.
+    private static void flushLoadedBlockEntities(ServerLevel level) {
+        Set<BlockPos> pending = pendingLoadedBlockEntities.remove(level);
+        if (pending == null || pending.isEmpty()) {
+            return;
+        }
+
+        Set<BlockPos> remaining = null;
+        for (BlockPos pos : pending) {
+            if (!level.isLoaded(pos)) {
+                if (remaining == null) {
+                    remaining = new HashSet<>();
+                }
+                remaining.add(pos);
+                continue;
+            }
+
+            if (level.getBlockEntity(pos) instanceof ChunkLoaderBlockEntity blockEntity) {
+                syncLoadedBlockEntity(level, blockEntity);
+            }
+        }
+
+        if (remaining != null) {
+            pendingLoadedBlockEntities.computeIfAbsent(level, unused -> new HashSet<>()).addAll(remaining);
         }
     }
 
